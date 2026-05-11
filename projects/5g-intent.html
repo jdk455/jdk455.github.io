@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5G核心网意图驱动配置系统 — 蔡嘉骏</title>
+<meta name="description" content="面向5G核心网的知识增强型意图驱动配置生成系统，学校与华为合作项目。">
+<link rel="canonical" href="https://jdkjdkjdk.top/projects/5g-intent.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#projects" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">学校 × 华为合作 · 已发表 EI 会议（ICCT 2025）· 已授权专利</div>
+    <h1 class="detail-title serif">面向 5G 核心网的意图驱动指令配置系统</h1>
+    <p class="detail-desc reveal">
+      构建从自然语言运维意图到网络配置命令的自动推理系统。基于 5,333 条真实 5G 核心网配置命令与标注语义构建 Neo4j 知识图谱，融合 BERT 语义表示与 GraphSAGE 图推理模型进行端到端的联合表示学习，通过意图 embedding 的相似度匹配实现配置指令自动推断。经过严格评测验证，Recall 达 89%，Accuracy 达 99.88%，已在华为 5G 核心网产品中部署应用。
+    </p>
+
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">问题与方法</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">问题定义</div>
+        <div class="detail-section-content">
+          <strong>核心挑战：</strong>5G 核心网的运维涉及 5,000+ 条复杂配置命令，运维人员难以准确记忆每条命令的语法与参数。在 5GC ToB（面向企业客户）场景中，如 DNN（数据网络名称）激活等关键业务需要配置 SMF、UPF、DCGW、FW 等多个网络元素，涉及复杂的参数引用和配置顺序约束。<br/><br/>
+          <strong>解决方案：</strong>通过 NLP + 知识图谱的联合方法，让运维人员用自然语言描述意图（如"为该用户设置带宽优先级"），系统自动推断并生成对应的配置命令序列。相比模板方法和状态机方法，知识增强的方案具备更强的表达灵活性、推理能力和自适应能力。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">系统架构</div>
+        <div class="detail-section-content" style="text-align: center; margin: 20px 0;">
+          <img src="./img/5g_intent_arch_fig3.png" alt="系统架构图" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <p style="font-size: 14px; color: #666; margin-top: 10px;">知识图谱构建与意图驱动推理系统的完整架构</p>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">技术方案</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>模块一：知识图谱构建</strong><br/>
+          从 5,333 条实际设备手册中的配置命令自动抽取完整名称、缩写、功能描述、参数说明。通过文本增强（BERT + RoBERTa 同义词替换）生成增强文本。采用聚类损失（KL 散度）+ 对比学习损失的联合优化，进行命令功能聚类。提取两类关键关系：① 命令类别关系（功能相似的命令聚类）；② 参数引用关系（不同命令间的参数重用关系）。最终构建 Neo4j 知识图谱，支持 UML 图展示。</div>
+
+          <div class="detail-arch-item"><strong>模块二：意图驱动知识推理</strong><br/>
+          将配置示例数据格式化为 [意图-命令序列] 数据集。使用微调 BERT-large（1024 维嵌入 → 300 维）生成意图与命令的语义向量。通过 GraphSAGE（两层、300 维节点嵌入）对命令-意图知识图谱进行多跳卷积，融合拓扑结构与语义信息。采用对比学习（InfoNCE 损失）进行端到端优化，最大化正例意图-命令对的相似度。</div>
+
+          <div class="detail-arch-item"><strong>推理流程：</strong>用户输入意图 → BERT 编码为语义向量 → GraphSAGE 增强的命令嵌入 → 余弦相似度计算 → 阈值过滤 → 输出命令集</div>
+
+          <div class="detail-arch-item"><strong>核心创新：</strong>相比基于模板和状态机的方法，本方案直接从设备手册知识中提取推理能力，无需人工编写规则，支持快速适配新的业务场景和配置类型。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">实验与结果</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">实验验证</div>
+        <div class="detail-section-content" style="margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div style="text-align: center;">
+              <img src="./img/5g_intent_page6_img1.png" alt="命令聚类结果" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <p style="font-size: 12px; color: #666; margin-top: 8px;">命令功能聚类（相同颜色表示同一类别）</p>
+            </div>
+            <div style="text-align: center;">
+              <img src="./img/5g_intent_page6_img2.png" alt="知识图谱" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <p style="font-size: 12px; color: #666; margin-top: 8px;">构建的知识图谱（UML 图表示）</p>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section-content">
+          <strong>知识图谱聚类效果：</strong>在 1,189 条命令子集上进行命令聚类，对比专家手动构建的图。在 SMF VPN & LB、SMF GRE & AS、UPF VPN & LB、UPF GRE & AS 四个真实 5GC ToB 场景上，纯度最高达 0.938，精度最高达 0.857，召回率均在 0.6+ 以上。<br/><br/>
+          <strong>意图驱动推理性能：</strong>使用 67 条命令和包含 840 条意图的 [意图-命令序列] 数据集，训练集 800 条、测试集 40 条。在测试集上：<br/>
+          • 精确率（Accuracy）：99.88%<br/>
+          • 召回率（Recall）：88.97%<br/>
+          • F2 分数：73.39%（加权强调召回）<br/><br/>
+          结果表明系统能够准确推断大多数相关的配置命令，即使在正例稀缺的场景下也保持高性能。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">推理示例</div>
+        <div class="detail-section-content" style="text-align: center; margin: 20px 0;">
+          <img src="./img/5g_intent_inference_fig7.png" alt="意图推理示例" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <p style="font-size: 14px; color: #666; margin-top: 10px;">自动命令生成示例：用户意图 → 生成对应的配置命令序列</p>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">量化效果</div>
+        <div class="detail-effects">
+          <div class="effect-card">
+            <div class="num">5,333</div>
+            <div class="label">设备手册配置命令</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">99.88%</div>
+            <div class="label">意图推理精确率</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">88.97%</div>
+            <div class="label">命令召回率</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">0.938</div>
+            <div class="label">聚类最高纯度</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">840</div>
+            <div class="label">训练意图-命令对</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~200ms</div>
+            <div class="label">单条意图推理延迟</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">个人产出</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">核心职责</div>
+        <div class="detail-section-content">
+          负责系统全栈设计与实现，主要工作包括：<br/>
+          • 知识提取与图谱构建：从 5G 核心网设备手册中自动抽取命令元数据（名称、缩写、功能、参数），通过文本增强和语义聚类构建命令知识图谱<br/>
+          • 聚类算法设计：设计命令功能聚类算法，融合聚类损失和对比学习损失，实现高纯度（最高 0.938）的命令分类<br/>
+          • 神经网络架构：集成微调 BERT-large、GraphSAGE 两层卷积、参数引用关系学习，构建完整的编码-推理管道<br/>
+          • 对比学习优化：设计 InfoNCE 损失函数，针对正例稀缺场景的负采样策略，实现高精度（99.88%）意图-命令匹配<br/>
+          • 评测与部署：设计评测框架，完成四个真实 5GC ToB 场景的聚类验证和意图推理性能评估，集成华为 5G 核心网产品线上平台<br/>
+          • 论文撰写：独立完成论文撰写和投递，发表于 ICCT 2025 EI 会议
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">学术输出</div>
+        <div class="detail-section-content">
+          <strong>EI 会议论文</strong>（已发表）：ICCT 2025，标题《Knowledge-Enabled Intent-Driven Network Configuration Generation for 5G Core Networks》。
+          <a href="https://www.researchgate.net/publication/390592450_Knowledge-Enabled_Intent-Driven_Network_Configuration_Generation_for_5G_Core_Networks" target="_blank" rel="noopener" style="color:var(--accent);font-weight:500">在 ResearchGate 查看全文 →</a>
+          <br><br>
+          <strong>发明专利</strong>（已授权）：一种意图驱动的网络配置模板生成方法，针对 5G 核心网的知识增强型意图驱动配置生成。
+          <a href="https://xueshu.baidu.com/ndscholar/browse/detail?paperid=1n5v0a20e91j0650tu3y0vm0pp220057" target="_blank" rel="noopener" style="color:var(--accent);font-weight:500">在百度学术查看 →</a>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">Neo4j</span><span class="tag">BERT</span><span class="tag">GraphSAGE</span><span class="tag">PyTorch</span><span class="tag">对比学习</span><span class="tag">知识图谱</span><span class="tag">5G 核心网</span><span class="tag">NLP</span><span class="tag">图神经网络</span><span class="tag">Python</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法 — 蔡嘉骏</title>
+<meta name="description" content="发明专利：基于 SDN 架构与深度强化学习的 LEO-MEO 双层星座大规模卫星网络分簇 QoS 路由方法，融合 GNN-GRU 与 QMIX 多智能体协同决策。">
+<link rel="canonical" href="https://jdkjdkjdk.top/publications/patent-satellite-qos.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#publications" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">📝 发明专利 · 正在发表 · 国家重点项目</div>
+    <h1 class="detail-title serif">一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法</h1>
+    <p class="detail-desc reveal">
+      面向 LEO-MEO 双层星座大规模卫星网络（数百至数千节点）设计的 <strong>SDN 集中管控 + 分布式决策</strong>融合架构。专利核心：以 MEO 卫星作为<strong>分布式 SDN 控制器（簇首）</strong>，承担簇内链路状态采集与路由决策，通过 GNN-GRU 拓扑特征提取与 QMIX 多智能体协同实现差异化 QoS 保障。突破传统集中式 SDN 因长距 LEO-GEO 链路引入的传播时延与决策滞后瓶颈，同时避免纯分布式架构的全局视野缺失，已在国家重点项目卫星仿真平台上完成验证。
+    </p>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">专利信息</div>
+      <div class="detail-section-content">
+        <strong>专利名称：</strong>一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法<br>
+        <strong>状态：</strong>正在发表<br>
+        <strong>领域：</strong>卫星通信 / SDN / 深度强化学习 / 图神经网络 / QoS 路由<br>
+        <strong>申请背景：</strong>国家重点项目（2024 - 2025）卫星网络相关研究<br>
+        <strong>关联项目：</strong><a href="../projects/satellite-qos.html">低轨卫星网络 QoS 感知多路径路由</a>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">SDN 架构定位（核心创新）</div>
+      <div class="detail-arch">
+        <div class="detail-arch-item"><strong>① 传统 SDN-of-Satellite 架构的痛点：</strong>地面控制中心或 GEO 卫星作为集中控制器收集全网状态并下发流表，存在两大问题：（a）全网链路状态信息收集带来巨大信令开销；（b）LEO-GEO 跨层链路（>10,000 km）引入数百毫秒传播时延，导致控制器对网络变化的<strong>感知滞后</strong>，无法应对 LEO 卫星的高速运动与频繁链路切换。</div>
+
+        <div class="detail-arch-item"><strong>② 纯分布式架构的痛点：</strong>各 LEO 卫星独立基于局部观测做下一跳决策，反应速度快但缺少全局视野，难以满足跨大洲端到端业务的差异化 QoS 保障。</div>
+
+        <div class="detail-arch-item"><strong>③ 本专利的 SDN 创新：分布式 SDN 控制器</strong><br>引入 <strong>MEO 卫星作为分布式 SDN 控制平面节点（簇首）</strong>，每个 MEO 控制器管控其下方一个 LEO 簇。控制器与受控 LEO 节点的距离从 GEO 的 36,000 km 缩短到 MEO 的 8,000~20,000 km，单向传播时延降至 ~30-70ms。多个 MEO 控制器之间通过 QMIX 协同决策，实现<strong>"局部 SDN 集中管控 + 全局多控制器协同"</strong>的层次化 SDN 架构。</div>
+
+        <div class="detail-arch-item"><strong>SDN 数据面 / 控制面解耦：</strong>LEO 卫星仅承担数据面转发，根据 MEO 控制器下发的路由路径执行逐跳转发；MEO 卫星承担控制面，包括链路状态采集、Q 值计算、路径决策。这种数据面 / 控制面分离的 SDN 范式，从源头降低了 LEO 节点的星上计算负担。</div>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">权利要求 1（核心步骤）</div>
+      <div class="detail-section-content" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;font-size:.9rem;line-height:1.8;">
+        <strong>S1</strong>、构建 LEO-MEO 分层分簇管控架构，将 LEO 卫星网络划分为若干簇，各簇由对应的 MEO 卫星作为簇首（即<strong>分布式 SDN 控制器</strong>），负责簇内链路状态信息采集与路由决策；<br><br>
+
+        <strong>S2</strong>、对卫星网络承载业务按 QoS 需求划分为<strong>时延敏感型、带宽敏感型和高可靠型</strong>三类，建立包含时延、剩余带宽、丢包率的链路 QoS 指标模型，构建路径 QoS 效用模型（时延效用 + 带宽效用 + 丢包率效用的加权线性组合）；<br><br>
+
+        <strong>S3</strong>、将分簇路由问题建模为<strong>多智能体部分可观测马尔可夫决策过程（POMDP）</strong>，定义五元组（状态空间、动作空间、转移概率、奖励函数、折扣因子），其中奖励函数与路径综合效用正相关，传输失败给予固定惩罚项；<br><br>
+
+        <strong>S4</strong>、簇首通过基于 <strong>GNN-GRU</strong> 的拓扑特征提取模块处理簇内链路状态信息，经空间特征聚合、GRU 状态更新和图级读出后输出候选路径 Q 值；<br><br>
+
+        <strong>S5</strong>、采用基于 <strong>QMIX</strong> 的多智能体协同决策机制，将各 MEO 簇首的局部 Q 值非线性聚合为全局总价值 Q_tot，通过单调性约束保证局部最优决策能促进全局 QoS 性能提升；<br><br>
+
+        <strong>S6</strong>、簇首根据候选路径 Q 值执行簇内、簇间路由决策，生成端到端最优路由路径并下发至 LEO 卫星，完成数据包转发与带宽资源预留。
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术方案细节</div>
+      <div class="detail-arch">
+        <div class="detail-arch-item"><strong>分簇方法（S11-S12）：</strong>将全球地表空间划分为固定逻辑网格并抽象为虚拟节点，LEO 卫星根据经纬度坐标映射至对应虚拟节点。按轨道运行方向和逻辑相邻关系划分簇，每簇包含预设数量轨道和每轨道预设数量的逻辑相邻 LEO 卫星。MEO 卫星通过层间链路与簇内 LEO 卫星建立 SDN 控制通道。</div>
+
+        <div class="detail-arch-item"><strong>QoS 指标建模：</strong>① 链路时延 = 传播时延 + 传输时延 + 排队时延（M/M/1/m 模型）+ 处理时延；② 链路剩余带宽 = 链路总容量 - 已占用带宽；③ 链路丢包率 = 基于 M/M/1/m 模型的流量过载阻塞概率。路径级指标分别为：所有链路时延之和、瓶颈剩余带宽（min）、每跳成功概率乘积。</div>
+
+        <div class="detail-arch-item"><strong>路径 QoS 效用：</strong>时延效用 = 理论最短路径时延 / 当前路径总时延；带宽效用 = 瓶颈剩余带宽 / 链路初始容量；丢包率效用 = 避开所有可能丢包节点的概率。综合效用 U = α·U_delay + β·U_bw + γ·U_loss，权重<strong>根据业务类型动态调整</strong>（时延敏感 → α 大；带宽敏感 → β 大；高可靠 → γ 大）。</div>
+
+        <div class="detail-arch-item"><strong>GNN-GRU 拓扑特征提取（S41-S43）：</strong>① 空间特征聚合：以链路为对象执行 L 轮消息传递，使用<strong>注意力机制加权聚合</strong>邻接链路特征；② GRU 状态更新：通过更新门与重置门机制更新链路隐藏状态；③ 图级读出：对子图内所有链路特征求和聚合，经 SELU 激活与 Dropout 正则化的 MLP 输出候选路径 Q 值。</div>
+
+        <div class="detail-arch-item"><strong>QMIX 多 SDN 控制器协同（S5）：</strong>采用<strong>分布式决策与集中式训练（CTDE）</strong>模式。混合网络将第 i 个 MEO 簇首的局部值 Q_i 非线性聚合为全局总价值 Q_tot，混合网络权重 W 由超网络动态生成且保持非负。通过单调性约束（∂Q_tot / ∂Q_i ≥ 0）保证各簇首的局部最优决策必然促进全网 QoS 性能提升，避免簇交界区的路由决策震荡与资源冲突。</div>
+
+        <div class="detail-arch-item"><strong>簇内路由（S61-S65）：</strong>簇内 LEO 节点产生业务请求 → 上报本簇 MEO SDN 控制器 → 判断目的节点是否在簇内 → 从预计算路径表查询 K 条候选路径 → 模拟带宽分配 → GNN-DQN 输出 Q 值 → 选最优路径 → 下发至沿途 LEO，按路径执行转发与带宽预留。</div>
+
+        <div class="detail-arch-item"><strong>簇间路由（S66-S610）：</strong>源簇 MEO 控制器确定目的簇 → 在簇级拓扑图上通过最短路径算法生成簇序列 → 选择跨簇边界节点对（地理最近 + 带宽充足的星间链路）→ 各途经簇 MEO 并行执行 S61-S65 生成子路径 → 拼接子路径与跨簇链路 → 下发全局最优路径。</div>
+
+        <div class="detail-arch-item"><strong>训练范式（S7-S9）：</strong>构建 GNN-DQN 路由决策模型，时间差分误差平方为损失函数。各 MEO 控制器智能体采用<strong>集中训练、分布式执行</strong>范式：训练阶段共享网络参数与经验缓冲区，以端到端路由性能为联合奖励信号统一训练；推理阶段基于本簇局部状态独立执行路由决策。</div>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术效果（与现有 SDN-of-Satellite 对比）</div>
+      <div class="detail-section-content">
+        <strong>第一</strong>、解决传统集中式 SDN（地面 / GEO 控制器）由于长距离星地链路或 LEO-GEO 跨层链路引入的较大传播时延，以及由此导致的<strong>路由决策滞后</strong>问题；MEO 簇首作为分布式 SDN 控制器，控制时延降低 ~50-80%；<br><br>
+
+        <strong>第二</strong>、解决传统分布式路由（LEO 自决策）的<strong>全局视野缺失</strong>问题，通过 QMIX 协同决策保证局部最优在全局最优意义下不冲突；<br><br>
+
+        <strong>第三</strong>、通过<strong>图神经网络对卫星网络非欧几里得拓扑结构进行自适应特征提取</strong>，显著提升模型在不同规模、不同结构卫星簇间的泛化能力与可扩展性，避免传统 DRL 路由模型在拓扑变化时需重训的问题；<br><br>
+
+        <strong>第四</strong>、实现大规模高动态卫星网络的多业务差异化 QoS 保障，针对时延敏感、带宽敏感、高可靠三类业务，分别取不同效用权重，在拓扑频繁变化场景下仍能保证关键业务质量需求；<br><br>
+
+        <strong>第五</strong>、降低星上资源开销与路由计算复杂度，通过分簇机制将大规模卫星网络划分为多个 SDN 管理域，在簇内与簇间分别执行子路径优化与全局路由协调。
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">关联资源</div>
+      <div class="detail-section-content">
+        <strong>关联项目：</strong><a href="../projects/satellite-qos.html">低轨卫星网络 QoS 感知多路径路由</a><br>
+        <strong>项目背景：</strong>国家重点项目（2024 - 2025）卫星网络相关研究
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术栈</div>
+      <div class="detail-tags">
+        <span class="tag">SDN</span><span class="tag">分布式 SDN 控制器</span><span class="tag">LEO-MEO 双层星座</span><span class="tag">GNN-GRU</span><span class="tag">QMIX</span><span class="tag">深度强化学习</span><span class="tag">多智能体</span><span class="tag">POMDP</span><span class="tag">CTDE</span><span class="tag">图神经网络</span><span class="tag">M/M/1/m 排队</span><span class="tag">QoS 路由</span><span class="tag">PyTorch</span><span class="tag">卫星网络</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

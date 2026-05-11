@@ -1,0 +1,67 @@
+# ===== Personal Homepage .gitignore =====
+
+# --- Source materials (raw PDFs/DOCXs/PPTXs, ~36MB, not for web) ---
+materials/
+
+# --- IDE / Claude / VS / VSCode local configs ---
+.claude/
+.vs/
+.vscode/
+
+# --- Debug / WIP docs ---
+MERMAID_TROUBLESHOOTING.md
+
+# --- Unused alternate avatars (only avatar.jpg is referenced) ---
+images/avatar1.*
+images/avatar2.*
+images/avatar3.*
+images/avatar4.*
+
+# --- OS artifacts ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+*.swo
+
+# --- Python (if any local scripts) ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# --- Node ---
+node_modules/
+package-lock.json
+
+# --- Logs & temp ---
+*.log
+*.tmp
+*.bak
+
+# --- projects/img/ whitelist =============================================
+# Only commit images actually referenced by the HTML pages.
+# The img folder contains ~28 MB of raw-extracted assets (PDF page renders,
+# PPTX slide exports, WMF/EMF vector originals) that aren't used on the live
+# site. We blanket-ignore the folder and explicitly un-ignore the 15 files
+# that are referenced.
+projects/img/*
+!projects/img/5g_intent_arch_fig3.png
+!projects/img/5g_intent_inference_fig7.png
+!projects/img/5g_intent_page6_img1.png
+!projects/img/5g_intent_page6_img2.png
+!projects/img/chainmaker_arch_hierarchy.png
+!projects/img/chainmaker_arch_logical.png
+!projects/img/chainmaker_core_processes.png
+!projects/img/maxbft_slide_render_7.png
+!projects/img/maxbft_slide_render_8.png
+!projects/img/thz_antenna_rx_pattern.png
+!projects/img/thz_antenna_tx_pattern.png
+!projects/img/thz_design_p39_i1.png
+!projects/img/thz_design_p51_i1.png
+!projects/img/thz_design_p7_i1.jpeg
+!projects/img/thz_multipath_routing.png

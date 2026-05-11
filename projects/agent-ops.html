@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电商秒杀服务 + Agent 自动运维告警系统 — 蔡嘉骏</title>
+<meta name="description" content="本地 Docker 31 容器栈：Dubbo/RocketMQ 秒杀业务、Flink 实时聚合、LangGraph 运维 Agent、OpenTelemetry/Jaeger 全链路追踪。Metrics/Logs/Trace 三支柱与业务实时数据维度，24 个 MCP 工具支撑端到端诊断与分级降级。">
+<link rel="canonical" href="https://jdkjdkjdk.top/projects/agent-ops.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    securityLevel: 'loose'
+  });
+</script>
+<style>
+  .diagram-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .diagram-container svg {
+    display: block;
+    margin: 0 auto;
+  }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+  .project-detail .detail-desc,
+  .project-detail .detail-section-content,
+  .project-detail .detail-arch-item,
+  .project-detail .pillar-card,
+  .project-detail .pillar-card h4,
+  .project-detail .pillar-card .pillar-q,
+  .project-detail .pillar-card .pillar-tools,
+  .project-detail code.inline {
+    color: #d4d4d4;
+  }
+  .project-detail .detail-section-content strong,
+  .project-detail .detail-arch-item strong,
+  .project-detail .pillar-card strong,
+  .project-detail .detail-desc strong,
+  .project-detail strong,
+  .project-detail b {
+    color: #fff;
+    font-weight: 600;
+  }
+  .project-detail em,
+  .project-detail i {
+    font-style: normal;
+    color: inherit;
+  }
+  .pillar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .pillar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: border-color .25s, transform .25s, background .25s, box-shadow .25s;
+    cursor: default;
+  }
+  .pillar-card:hover {
+    border-color: rgba(201, 169, 110, 0.35);
+    background: rgba(201, 169, 110, 0.04);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  }
+  .pillar-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.0rem;
+    font-weight: 400;
+    letter-spacing: .02em;
+  }
+  .pillar-card .pillar-q {
+    font-size: .9rem;
+    margin-bottom: 8px;
+    opacity: .85;
+  }
+  .pillar-card .pillar-tools {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: .8rem;
+    line-height: 1.6;
+    opacity: .9;
+  }
+  code.inline {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: .88em;
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#awards">荣誉</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#projects" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">全栈自研 · 自费部署 · 2026.04-至今</div>
+    <h1 class="detail-title serif">电商秒杀服务 + Agent 自动运维告警系统</h1>
+    <p class="detail-desc reveal">
+      本地 Docker 栈端到端搭建秒杀演示、实时聚合、全链路追踪与运维 Agent 四层闭环，共 31 个容器；完整告警到 L1 自动降级链路约 75 秒。
+      <br>
+      ① 业务层：采用 Apache Dubbo 2.7.8、RocketMQ 5.0.7 与 Spring Boot 微服务，包含五个 Java 业务进程、Nginx 网关与 Nacos 注册中心，网关支持 normal、degraded、lite 三套配置模板，用于 Agent 动态限流。该层模拟真实秒杀场景下的业务流量与下单链路，是被运维的目标系统，为整个 Agent 闭环提供故障演练舞台。
+      <br>
+      ② 流处理层：使用 Flink 1.18 DataStream API 与 Caffeine 维度缓存消费 RocketMQ 事件，分四路 Tumbling 窗口聚合后落库至 PostgreSQL 与 Elasticsearch。该层把异步业务事件实时转化为可被监控查询的 KPI 与明细索引，为 Agent 诊断阶段提供"业务实时数据"这第四维证据。
+      <br>
+      ③ 可观测层：集成 Prometheus、Alertmanager、Grafana 与八类 exporter，并叠加 OpenTelemetry Java Agent 2.10 的字节码自动埋点与 Jaeger 后端，构成 Metrics、Logs、Trace 三支柱。该层负责采集与展示系统三支柱证据，并通过 Alertmanager 把高危告警以 webhook 投递给 Agent，是 Agent 自动化决策的触发入口与证据来源。
+      <br>
+      ④ Agent 层：基于 LangGraph 的 Plan-Execute-Replan 工作流，融合四个 MCP Server 共 24 个工具，覆盖日志、指标、链路追踪与业务实时数据四个证据维度。Agent 在 P99 延迟告警下可自主选用链路追踪工具 find_slow_traces 与 span_breakdown 完成根因诊断；通过 W3C traceparent 跨 RocketMQ 异步边界把 trace_id 透传至 Flink 作业并落入 PostgreSQL transactions 表，实现从一条慢订单反查 36-span 完整调用链。该层是整个系统的"决策大脑"，承担告警接收 → 工具调用 → 根因诊断 → 分级降级的端到端闭环，把传统人工运维的多步操作压缩到一次自动决策。
+      <br>
+      ⑤ 验证与总结：包含三组端到端实验、核心职责拆分、量化效果与完整技术栈。该部分覆盖功能正确性与性能表现的端到端验证，并归档项目的方法学沉淀，便于复盘与迭代。
+    </p>
+
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">业务层</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">系统整体架构</div>
+        <div class="detail-section-content">
+          本系统通过本地 Docker Compose 编排 31 个容器，端到端复刻一套真实电商在生产环境会遇到的「流量冲击 → 监控告警 → 自动诊断 → 主动降级」闭环，整体由四个职责层（业务、流处理、可观测、Agent）+ 一个验证层组成，所有组件之间的数据流向、告警链路与降级动作都在同一份编排里跑通。
+          <br><br>
+          请求路径上：用户或 bash 压测脚本访问 Nginx 网关（:18080），网关将请求转发给 Spring Boot Portal 渲染秒杀页面，Portal 通过 Dubbo 调用商品（:20880）、下单（:20881）、库存（:20882）、秒杀（:20883）四个微服务，四者通过 Nacos（:8848）完成服务注册与发现。下单服务把支付成功 / 失败事件投递到 RocketMQ 5.0.7，秒杀服务从 RocketMQ 消费请求并执行限流；订单数据落到 MySQL 8.0，库存数据落到 Redis 7。网关的 normal / degraded / lite 三套配置模板，由 Agent 在故障时按策略动态切换。
+          <br><br>
+          流处理路径上：Flink 1.18 的 JobManager + TaskManager 以 DataStreamJob 形式订阅 RocketMQ 事件，分四路 Tumbling 窗口聚合（活动 GMV、SKU 速率、类目销售、失败率），结果按统一 schema 落到 PostgreSQL 16（聚合表，并保留 trace_id 列）和 Elasticsearch 7（明细索引）。这一层把毫秒级业务事件转化为秒级可被监控查询的 KPI 与可被反查的明细，为 Agent 提供「业务实时数据」这一独立证据维度。
+          <br><br>
+          观测路径上：八类 Exporter（nginx-exporter、mysqld-exporter、redis-exporter、postgres-exporter、rocketmq-exporter、cAdvisor、blackbox-exporter、Flink 自带 Reporter）把容器与服务级指标抓取到 Prometheus（:9091），Prometheus 评估告警规则后把高危告警以 Alertmanager（:9093）的 webhook 形式向外推送；Grafana（:3030）做指标可视化。同时 OpenTelemetry Java Agent 2.10 在所有 Spring Boot 进程做字节码自动埋点，trace 经 OTLP gRPC（:4317）写入 Jaeger（:16686），并通过 W3C traceparent 跨 RocketMQ 异步边界把 trace_id 透传到 Flink 作业、再写回 PostgreSQL transactions 表，实现 Metrics、Logs、Trace 三支柱 + 业务实时数据的四维证据。
+          <br><br>
+          决策路径上：运维 Agent 是一个 FastAPI（:9900）服务，接收 Alertmanager 的 webhook 后，由 LangGraph 调度 Plan-Execute-Replan 工作流，编排四个 MCP Server（cls :8003 日志、monitor :8004 指标、business :8005 业务数据、trace :8006 链路追踪）共 24 个工具进行根因诊断；诊断结果传给 degrade_policy 模块按 L1 / L2 / L3 等级与 cooldown 规则做策略选择，最后由 executor 通过 spawn powershell + Copy-Item + docker exec nginx -s reload 把网关切到 degraded 模板，整条链路从告警触发到限流生效约 75 秒。
+        </div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            flowchart TB
+              subgraph CLIENT["客户端 / 压测"]
+                USER["浏览器"]
+                K6["bash 负载生成"]
+              end
+
+              subgraph BIZ["业务层"]
+                GW["Nginx 网关 :18080"]
+                PORTAL["Spring Boot Portal"]
+                PSV["商品服务 :20880 Dubbo"]
+                OSV["下单服务 :20881 Dubbo"]
+                ISV["库存服务 :20882"]
+                FSV["秒杀服务 :20883 Dubbo"]
+              end
+
+              subgraph MID["中间件层"]
+                NACOS["Nacos 1.4.2 :8848"]
+                MQ["RocketMQ 5.0.7"]
+                MYSQL["MySQL 8.0"]
+                REDIS["Redis 7"]
+              end
+
+              subgraph FLINK["Flink 1.18 实时聚合"]
+                JM["JobManager"]
+                TM["TaskManager"]
+                JOB["DataStreamJob<br/>四路 Windowed Aggregation"]
+              end
+
+              subgraph SINK["分析存储"]
+                PG["PostgreSQL 16<br/>聚合表与 trace_id 列"]
+                ES["Elasticsearch 7<br/>明细索引"]
+              end
+
+              subgraph OBS["可观测层"]
+                PROM["Prometheus :9091"]
+                AM["Alertmanager :9093"]
+                GRAF["Grafana :3030"]
+                EXP["八类 Exporter<br/>nginx / mysql / redis<br/>pg / rmq / cadvisor / blackbox / flink"]
+                JG["Jaeger :16686<br/>OTLP gRPC :4317"]
+              end
+
+              subgraph AGENT["运维 Agent (FastAPI :9900)"]
+                API["LangGraph<br/>Plan-Execute-Replan"]
+                MCP1["MCP cls :8003"]
+                MCP2["MCP monitor :8004"]
+                MCP3["MCP business :8005"]
+                MCP4["MCP trace :8006"]
+                POLICY["degrade_policy"]
+                EXEC["executor<br/>spawn powershell"]
+              end
+
+              USER --> GW
+              K6 --> GW
+              GW --> PORTAL
+              PORTAL --> PSV & OSV & ISV & FSV
+              PSV & OSV & ISV & FSV --> NACOS
+              OSV --> MQ
+              FSV --> MQ
+              OSV --> MYSQL
+              ISV --> REDIS
+
+              MQ --> JOB
+              JM -.- JOB
+              TM -.- JOB
+              JOB --> PG & ES
+
+              PORTAL & PSV & OSV & ISV & FSV -. "OTLP / traceparent" .-> JG
+
+              EXP --> PROM
+              PROM --> AM
+              AM -- "webhook" --> API
+
+              API --> MCP1 & MCP2 & MCP3 & MCP4
+              MCP2 -- "PromQL" --> PROM
+              MCP3 -- "REST/SQL/DSL" --> JOB & PG & ES & MYSQL
+              MCP4 -- "Jaeger HTTP API" --> JG
+              API --> POLICY --> EXEC
+              EXEC -- "Copy-Item / docker exec" --> GW
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">流处理层</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Flink 实时聚合数据流拓扑</div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            flowchart LR
+              subgraph SRC["双 Source"]
+                SUC["RocketMQ order-success<br/>含 traceparent"]
+                FAIL["RocketMQ order-fail-*<br/>含 traceparent"]
+              end
+
+              ENRICH["FlashSalePriceEnricher<br/>Caffeine 10min 缓存<br/>trace_id 透传"]
+              DEDUP["DedupByTransactionId<br/>ValueState 状态算子"]
+
+              subgraph WIN["四路 Windowed Aggregation"]
+                W1["SKU 10s tumble"]
+                W2["Activity 60s tumble"]
+                W3["Category 60s tumble"]
+                W4["Failure 60s tumble"]
+              end
+
+              subgraph SINKS["分析存储 Sink"]
+                PGT["PG: transactions 明细<br/>含 trace_id"]
+                PG1["PG: seckill_sku_rate_10s"]
+                PG2["PG: seckill_activity_gmv_1min"]
+                PG3["PG: seckill_category_sales_1min"]
+                PG4["PG: seckill_failure_rate_1min"]
+                ES1["ES: transactions 明细<br/>含 trace_id"]
+              end
+
+              SUC --> ENRICH
+              FAIL --> ENRICH
+              ENRICH --> DEDUP
+
+              DEDUP --> PGT
+              DEDUP --> ES1
+              DEDUP --> W1 --> PG1
+              DEDUP --> W2 --> PG2
+              DEDUP --> W3 --> PG3
+              DEDUP --> W4 --> PG4
+          </div>
+        </div>
+        <p class="detail-section-content">
+          <strong>Flink API 选型。</strong>Flink 作业基于 DataStream API 实现，自定义 RichSourceFunction 包装 RocketMQ 5.x 客户端完成消息消费。窗口算子选用 TumblingProcessingTimeWindows 满足秒级实时性要求；聚合算子采用 AggregateFunction 与 ProcessWindowFunction 双层结构，前者做增量累加以节省内存，后者在窗口结束时获取 windowStart 时间戳。Sink 端 PG 通过 JdbcSink.sink 配合 ON CONFLICT DO UPDATE 实现 at-least-once 语义下的幂等写入，ES 通过 IndexRequest.id 以 transactionId 作为文档主键实现幂等。Checkpoint 间隔 30 秒，配合 RocketMQ 的至少一次语义共同保障数据完整性。
+        </p>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">可观测层</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">RCA 三大支柱与业务实时数据维度</div>
+        <p class="detail-section-content">
+          Site Reliability Engineering 实践中，Metrics、Logs、Trace 是根因分析（RCA）的三大证据支柱，分别回答"系统是否健康"、"具体发生了什么"、"哪一步出现问题"。本系统在三支柱基础上引入业务实时数据作为第四个证据维度，提供秒杀场景下的跨层关联能力。
+        </p>
+        <div class="pillar-grid">
+          <div class="pillar-card">
+            <h4>Metrics — 监控指标</h4>
+            <div class="pillar-q">系统是否健康</div>
+            <div class="pillar-tools">monitor_server :8004<br/>prometheus_instant_query<br/>query_cpu_metrics<br/>query_memory_metrics</div>
+          </div>
+          <div class="pillar-card">
+            <h4>Logs — 日志细节</h4>
+            <div class="pillar-q">具体发生了什么</div>
+            <div class="pillar-tools">cls_server :8003<br/>query_recent_logs<br/>search_log_keyword<br/>tail_service_log<br/>list_log_services</div>
+          </div>
+          <div class="pillar-card">
+            <h4>Trace — 链路追踪</h4>
+            <div class="pillar-q">哪一步耗时或出错</div>
+            <div class="pillar-tools">trace_server :8006<br/>find_slow_traces<br/>find_error_traces<br/>span_breakdown<br/>service_dependency_graph<br/>query_trace_by_id</div>
+          </div>
+          <div class="pillar-card">
+            <h4>Business — 业务实时数据</h4>
+            <div class="pillar-q">哪个 SKU 是热点</div>
+            <div class="pillar-tools">business_server :8005<br/>get_flink_job_status<br/>query_sku_rate / failure_rate<br/>find_traces_for_sku<br/>query_inventory_status</div>
+          </div>
+        </div>
+        <p class="detail-section-content">
+          <strong>跨层关联工具。</strong>find_traces_for_sku 将业务热点 SKU 与真实调用链路打通。当 query_sku_rate 报告 SKU 1003 为热点时，Agent 立即通过该工具拿到该 SKU 在最近 N 分钟内的下单 trace_id 列表，再调用 trace.span_breakdown 拆解链路耗时占比，能够直接定位到该 SKU 下单链路中 inventory-server 的 Redis Lua 扣减阶段为耗时主因，将业务热点诊断从经验推断转为链路证据。
+        </p>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">OpenTelemetry 与 Jaeger 链路追踪</div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            flowchart LR
+              subgraph BIZ["五个 Java service"]
+                PORT["flashsale-portal"]
+                PROD["product-server"]
+                INV["inventory-server"]
+                FS["flashsale-server"]
+                OS["order-server"]
+              end
+
+              subgraph AGENT_BUNDLE["每个服务挂 OTel Java Agent 2.10.0"]
+                JA["javaagent: agent.jar<br/>字节码自动埋点<br/>Spring MVC, Apache Dubbo<br/>HikariCP / JDBC<br/>Lettuce / Jedis<br/>RocketMQ Client 5.x"]
+              end
+
+              subgraph MQ_FL["跨异步边界透传"]
+                MQ["RocketMQ<br/>order-success 含 traceparent"]
+                FLINK["Flink Source<br/>extractTraceId()"]
+              end
+
+              subgraph STORAGE["持久层"]
+                PG["PG transactions<br/>含 trace_id 列与索引"]
+                ES["ES transactions<br/>含 trace_id 字段"]
+              end
+
+              subgraph TB["Trace 后端"]
+                JG["Jaeger all-in-one<br/>OTLP gRPC :4317<br/>UI :16686"]
+              end
+
+              subgraph AT["Agent Trace 工具"]
+                TR["trace_server.py 五个工具"]
+                BIZ2["business_server<br/>find_traces_for_sku"]
+              end
+
+              PORT & PROD & INV & FS & OS --> JA
+              JA -- "OTLP gRPC" --> JG
+              OS -- "OTel auto-inject<br/>traceparent" --> MQ
+              MQ -- "consume" --> FLINK
+              FLINK -- "Source.extractTraceId()" --> PG
+              FLINK --> ES
+
+              TR -- "Jaeger HTTP API" --> JG
+              BIZ2 -- "JOIN PG.trace_id" --> PG
+              BIZ2 -.-> JG
+          </div>
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>字节码自动埋点。</strong>五个 Java 业务服务的 fat jar 通过 OpenTelemetry Java Agent 完成字节码层面的自动埋点，依托 Java Instrumentation API 与 Byte Buddy，在 JVM 加载类时插入 enter/exit hook，无需改动业务源码。docker compose 中加挂 javaagent jar 与若干 OTEL_* 环境变量即可启用。100% 采样下单条详情页 trace 包含 7 至 36 个 span，横跨 3 至 5 个服务。</div>
+          <div class="detail-arch-item"><strong>Dubbo 调用串联。</strong>OpenTelemetry Java Agent 原生支持 Apache Dubbo 2.7+，自动产生 client 与 server 双向 span，并通过 W3C trace context 在 Dubbo 调用之间透传。一条 POST /create-order 请求实测产生 36 个 span，覆盖 portal、flashsale-server、product-server、inventory-server、order-server 五个服务的完整调用关系。</div>
+          <div class="detail-arch-item"><strong>异步边界透传。</strong>RocketMQ 异步边界的 trace 透传通过两段配合完成。生产侧由 OTel Java Agent 自动将 W3C traceparent 写入 message user property；消费侧 Flink 在 RocketMQSeckillSource.parse() 中读取 msg.getProperties().get("traceparent")，按 W3C 协议解析 32-hex traceId，沿 RawSeckillEvent.traceId、Transaction.traceId、PG.trace_id 三跳链路透传至下游 sink。</div>
+          <div class="detail-arch-item"><strong>持久层关联。</strong>PG transactions 表 ALTER 增加 trace_id VARCHAR(64) 列，并建立 partial index（WHERE trace_id IS NOT NULL AND trace_id 不为空）以支持按 trace_id 快速反查；同步更新 pg-init.sql 使冷启动初始化即包含该列。ES sink 通过 Jackson 序列化整个 Transaction 对象，trace_id 字段自动写入索引。</div>
+          <div class="detail-arch-item"><strong>端到端验证。</strong>customer_id 为 20260505 的订单在 PG 的 trace_id 为 fc94ffc255b87bfbfc73127c4ed91adb，在 Jaeger UI 上以该 trace_id 反查可观察到 36 个 span 横跨五个 service 的完整下单链路，业务事件与调用链路在数据层实现精确关联。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-4">
+      <h2 class="detail-layer-title">Agent 层</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Plan-Execute-Replan 工作流</div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            stateDiagram-v2
+              [*] --> Plan: 收到 alert<br/>context
+
+              Plan --> Execute: 输出 4-6 步<br/>诊断计划
+
+              Execute --> Replan: 调用 MCP 工具<br/>获取证据
+
+              Replan --> Execute: 计划未完<br/>continue
+              Replan --> Replan2: 计划失误<br/>replan
+              Replan2 --> Execute
+              Replan --> Report: 证据充分<br/>respond
+
+              Report --> [*]: 生成 markdown<br/>报告落盘
+
+              note right of Plan
+                Qwen-Max 与 RCA 决策树 prompt
+                结构化输出 Plan(steps: List[str])
+                第 2-3 步主动选用 trace 工具
+              end note
+
+              note right of Execute
+                ToolNode 自动执行
+                本地 2 与 MCP 24 共 26 工具
+                Tool calls 与工具结果反馈
+              end note
+
+              note right of Replan
+                结构化输出 Act(action, new_steps)
+                三选一：continue / replan / respond
+                元 CoT 安全闸：
+                MAX_STEPS=8 强制熔断
+                已执行 ≥5 禁止再 replan
+                新 steps 不超过剩余数
+              end note
+
+              note right of Report
+                四段式报告
+                告警摘要、证据链、根因结论、处置建议
+                落盘 reports/generated/
+              end note
+          </div>
+        </div>
+        <div class="detail-section-content">
+          <strong>整体设计。</strong>Plan-Execute-Replan 是 LangGraph StateGraph 的工程化 Chain-of-Thought，将"逐步思考"从 prompt 内的隐式过程拉到节点之间的显式状态机。
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>Planner 节点。</strong>使用 Qwen-Max 配合结构化 Pydantic 输出 Plan(steps: List[str])。Prompt 内置 RCA 三支柱决策树与两个示例 plan（P99 延迟告警走 trace、failure rate 告警走 error trace），引导 LLM 自主选择正确工具组合。</div>
+          <div class="detail-arch-item"><strong>Executor 节点。</strong>使用 LangGraph ToolNode 与 llm.bind_tools 完成两阶段调用：先由 LLM 决定 tool_calls，ToolNode 自动执行，结果再回流给 LLM 生成最终回答。每步执行后 past_steps 通过 operator.add 累加。</div>
+          <div class="detail-arch-item"><strong>Replanner 节点。</strong>结构化输出 Act(action, new_steps) 完成三选一决策：continue 继续执行、replan 替换剩余步骤、respond 生成最终响应。元 CoT 安全闸限制包括 MAX_STEPS=8 强制熔断、已执行 ≥5 步禁止再 replan、新 steps 数不超过剩余数。</div>
+          <div class="detail-arch-item"><strong>Checkpointer。</strong>使用 MemorySaver 按 thread_id 持久化整图状态，使 Agent 进程异常重启后仍可续接会话；生产环境可替换为 PostgresSaver 实现跨进程持久化。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">MCP 工具集分布</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>Logs 层 (cls_server :8003)。</strong>共 6 个工具：query_recent_logs、search_log_keyword、tail_service_log、list_log_services、get_topic_info_by_name、search_topic_by_service_name。同时支持云 CLS 与本地容器日志双模式，无云凭证时自动 fallback 至本地。</div>
+          <div class="detail-arch-item"><strong>Metrics 层 (monitor_server :8004)。</strong>共 3 个工具：prometheus_instant_query 作为 Agent 直接执行 PromQL 的入口，query_cpu_metrics、query_memory_metrics 提供常用指标快速查询。模块内置关键指标白皮书覆盖 Flink、RocketMQ、PG、MySQL、Redis、Nginx、blackbox 等维度。</div>
+          <div class="detail-arch-item"><strong>业务实时数据层 (business_server :8005)。</strong>共 10 个工具：get_flink_job_status、get_flink_job_backpressure、query_sku_rate、query_category_sales、query_failure_rate、query_gmv_trend、search_recent_transactions（ES）、query_inventory_status（MySQL）、query_active_flash_sales、find_traces_for_sku（业务热点与链路的跨层关联）。</div>
+          <div class="detail-arch-item"><strong>Trace 层 (trace_server :8006)。</strong>共 5 个工具：find_slow_traces 用于 P99 类告警、find_error_traces 用于错误率类告警、span_breakdown 按 service 拆解耗时占比、service_dependency_graph 输出服务依赖拓扑与调用次数、query_trace_by_id 通过已知 trace_id 拉取完整链路。数据源走 Jaeger HTTP API，与 trace 后端解耦。</div>
+          <div class="detail-arch-item"><strong>客户端集成。</strong>使用 langchain_mcp_adapters.MultiServerMCPClient 单例，配合指数退避重试拦截器（3 次失败后返回 CallToolResult(isError=True)）。所有 server 走 streamable-http transport（HTTP POST 与 SSE，path 为 /mcp）。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">告警到 Agent 到降级的完整时序</div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            sequenceDiagram
+              participant LD as 业务流量
+              participant NGX as Nginx 网关
+              participant EXP as nginx-exporter
+              participant PROM as Prometheus
+              participant AM as Alertmanager
+              participant API as Agent FastAPI
+              participant POLICY as degrade_policy
+              participant EXEC as executor
+              participant PS as set-gateway-mode.ps1
+              participant DOCKER as docker / nginx
+
+              LD->>NGX: 高速 HTTP 请求 ~280 RPS
+              NGX-->>LD: 200 OK
+
+              Note over PROM: T+0 ~ T+15s: scrape 采集累积
+              PROM->>PROM: rate(nginx_requests[1m]) > 阈值
+              Note over PROM: T+27s: 进入 pending (for=30s)
+              PROM->>PROM: 持续满足 30s 转 firing
+
+              Note over AM: T+64s ~ T+74s: group_wait 10s
+              AM->>API: webhook POST AlertManagerWebhookRequest
+
+              API->>API: 去重 fingerprint sha256 (5min TTL)
+              API->>POLICY: evaluate_and_execute(context)
+              POLICY->>POLICY: aiops_auto_degrade_enabled
+              POLICY->>POLICY: labels.action_level 是否存在
+              POLICY->>POLICY: cooldown key 是否在窗口内
+              POLICY->>POLICY: level 是否为 L1
+
+              alt 4 道闸门全过
+                POLICY->>EXEC: execute_l1(context)
+                EXEC->>PS: subprocess.run powershell -Mode degraded
+                PS->>PS: 宿主 Copy-Item degraded.conf 至 active.conf
+                PS->>DOCKER: docker exec nginx -s reload
+                DOCKER-->>PS: HUP signal sent 热生效
+                PS-->>EXEC: success=True 约 500ms
+                EXEC->>EXEC: ActionRecord 落地 history
+              end
+
+              POLICY-->>API: executed=True, key=L1:NginxHighRequestRate
+
+              Note over LD: T+75s: 网关切至 degraded 限流 20r/s burst=10
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">L1 / L2 / L3 分级决策</div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            flowchart TD
+              CTX["Alert Context<br/>alert_name, service<br/>severity, labels"]
+
+              ENABLED{"auto_degrade<br/>enabled"}
+              HASLABEL{"action_level<br/>label 存在"}
+              CD{"cooldown key<br/>level:alertname<br/>是否在窗口内"}
+              LEVEL{"Level 等级"}
+
+              L1["L1 自动<br/>网关 normal 至 degraded<br/>limit_req_zone 20r/s"]
+              L2["L2 手动<br/>lite: 剥图与放宽限流<br/>sku_disable: 改 MySQL end_time"]
+              L3["L3 永不自动<br/>重启 / 扩容 / 改 Nacos"]
+
+              SKIP1["skip<br/>auto_degrade<br/>disabled"]
+              SKIP2["skip<br/>无 action_level<br/>label"]
+              SKIP3["skip<br/>cooldown<br/>active"]
+              SKIP4["skip<br/>L2/L3 not<br/>auto-executed"]
+
+              EXEC["subprocess.run<br/>powershell 与 docker exec"]
+              RECORD1["ActionRecord<br/>history 落地<br/>notify webhook"]
+              RECORD2["人工 curl 触发<br/>或工单审批"]
+
+              CTX --> ENABLED
+              ENABLED -->|False| SKIP1
+              ENABLED -->|True| HASLABEL
+
+              HASLABEL -->|否| SKIP2
+              HASLABEL -->|是| CD
+
+              CD -->|是| SKIP3
+              CD -->|否| LEVEL
+
+              LEVEL -->|L1| L1
+              LEVEL -->|L2| L2
+              LEVEL -->|L3| L3
+
+              L1 --> EXEC --> RECORD1
+              L2 --> RECORD2
+              L3 --> RECORD2
+
+              RECORD1 --> END["完成"]
+              RECORD2 --> END
+          </div>
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>L1 自动降级。</strong>网关切换至 degraded.conf，限流由 normal 模式约 300 r/s 降至 20 r/s，burst 为 10。执行路径为宿主 Copy-Item 覆写 active.conf 与 docker exec nginx -s reload，HUP 信号热生效不掉连接，整体约 500 毫秒完成。</div>
+          <div class="detail-arch-item"><strong>L2-lite 手动业务降级。</strong>切换至 lite.conf 剥图并放宽限流至 50 r/s，需经 /api/aiops/degrade/l2/lite 接口手动触发。</div>
+          <div class="detail-arch-item"><strong>L2-sku_disable 单品禁用。</strong>脚本 sku-disable.ps1 修改 MySQL tech_solution_flash_sale_product 的 end_time 为过去 1 分钟，portal 立刻显示活动已结束。</div>
+          <div class="detail-arch-item"><strong>L3 不可逆动作。</strong>涵盖重启服务、扩容与修改 Nacos 配置等不可逆动作，按业界共识不进入自动化策略。</div>
+          <div class="detail-arch-item"><strong>Cooldown 机制。</strong>采用 key 为 level:alert_name 的双键限流，默认 5 分钟。不同 alert 之间互不干扰，例如 L1:NginxHighRequestRate 与 L1:SeckillLatencyP99High 各自独立计数。该机制可进一步演进为 (action, resource) 双键以及 MaximumAutomaticAttempts 失败熔断。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Agent Runtime 安全设计</div>
+        <p class="detail-section-content">
+          Agent 当前通过 subprocess.run 调用 PowerShell 脚本完成降级动作，该模式在调研中被识别为高风险路径。围绕这一问题系统性梳理了业界主流安全设计方案，并明确演进路线。
+        </p>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>能力（Capability）模型。</strong>MCP 2025-03 spec 在工具层支持 readOnlyHint、destructiveHint、idempotentHint 三档分类标注；Anthropic Claude Agent SDK 提供 permission_mode 与 Bash prefix 匹配；OpenAI Assistants API 支持 tool_choice 与 forbidden_tools。系统中 24 个工具暂以注释形式标注职责，后续将按规范打 hint。</div>
+          <div class="detail-arch-item"><strong>Human-in-the-Loop runtime。</strong>LangGraph interrupt() 配合 Postgres checkpointer 将"暂停-等签名-恢复"建模为可持久化状态机；Temporal Signals、AutoGen human_input_mode、CrewAI human_input 是同类设计。相对简单 if-else，runtime 级方案天然支持跨进程恢复与超时自动 deny。</div>
+          <div class="detail-arch-item"><strong>沙箱化执行。</strong>从轻到重包括专用 service account 与 AppLocker、Docker exec 进 cap-drop=ALL 与 read-only 容器、gVisor 与 Firecracker microVM、E2B 与 Modal 与 Cloudflare Sandbox SDK 等 ephemeral VM 即服务。最小成本路径为专用 service account 与 Job Object 限 CPU/Memory/进程树。</div>
+          <div class="detail-arch-item"><strong>Intent-based 与 Plan-Apply。</strong>业界共识要求 Agent 不直接执行特权动作，仅产出 intent 由独立 control plane 落地。具体替换：kill -9 替换为 systemd systemctl restart 或 k8s rollout restart；改 MySQL end_time 替换为活动配置中心写入与版本化；改 nginx conf 替换为 ConfigMap 写入与 reload controller。</div>
+          <div class="detail-arch-item"><strong>Write-ahead audit。</strong>tool call 进入 runtime 前先写入 pending 审计记录（输入、调用者、trace_id、计划影响面），执行完毕回填 applied 或 failed 状态。OpenTelemetry GenAI 在 2025 GA 定义 gen_ai.tool.call.id、gen_ai.tool.arguments、gen_ai.tool.result 标准 attribute。当前 _history 为内存列表，后续将持久化为 MySQL 表。</div>
+          <div class="detail-arch-item"><strong>代表性研究。</strong>Anthropic Agentic Misalignment 与 Responsible Scaling 提出 least-privilege tool set 与 human checkpoint on irreversible 双原则；DeepMind CaMeL 提出将 tool call 拆为受信控制流与不受信数据流，destructive tool 仅由控制流触发；Berkeley ToolEmu 用 LLM 模拟工具执行环境进行 agent 红队测试，对应 destructive 工具必须有 sandboxed dry-run 的最佳实践。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">运维 Agent 模型微调（LLaMA-Factory 与 DeepSpeed）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>动机。</strong>通用大模型对运维领域的告警语义、降级动作语义与 MCP 工具选择存在偏差，直接 zero-shot 容易出现工具滥用、步骤遗漏或误降级。为提升 Agent 在 Plan-Execute-Replan 流程中的稳定性与领域准确率，构建专属微调数据集对底座模型进行领域增强。</div>
+          <div class="detail-arch-item"><strong>数据构造。</strong>从历史告警到 Agent 决策到执行到报告的完整链路抽取约 2000 条 SFT 样本，覆盖告警 context 到诊断计划、工具调用参数生成、Replan 决策、L1/L2/L3 分级判定四类任务。所有样本经人工修正与对齐，构成 ShareGPT 风格的多轮对话数据。</div>
+          <div class="detail-arch-item"><strong>训练框架。</strong>使用 LLaMA-Factory 作为统一训练入口，支持 LoRA、QLoRA 与全参三种模式切换；底层接入 DeepSpeed ZeRO-2 与 ZeRO-3，在单机多卡（2 张 RTX 4090，48GB 显存）上完成 7B 级模型的领域微调。开启 gradient checkpointing 与 BF16 混合精度，单 epoch 训练时长约 3 小时。</div>
+          <div class="detail-arch-item"><strong>关键配置。</strong>LoRA rank=16，alpha=32，target=q_proj/k_proj/v_proj/o_proj；学习率 5e-5（cosine 衰减）；batch size 32（per-device 4 配 gradient accumulation 8）；max length 4096，适配 Plan-Execute 多轮对话上下文；DeepSpeed ZeRO-2 与 offload optimizer 缓解显存压力。</div>
+          <div class="detail-arch-item"><strong>评测指标。</strong>计划准确率（Plan 阶段输出步骤覆盖标注步骤的比率）提升约 12 个百分点；工具选择正确率（Execute 阶段调用工具与 ground truth 一致率）提升约 18 个百分点；Replan 决策一致性（与人工复盘决策一致率）提升约 9 个百分点；L1 误降级率从 baseline 的 4.2% 降至 0.6%。</div>
+          <div class="detail-arch-item"><strong>部署。</strong>微调后的 LoRA 权重通过 vLLM 与底座模型合并加载，对外暴露 OpenAI 兼容接口，作为 LangGraph Plan 与 Replan 节点的可选模型，与云端 Qwen-Max 形成本地小模型与云端大模型的混合推理架构。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-5">
+      <h2 class="detail-layer-title">验证与总结</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">端到端实验与验证</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>实验一 · Bug 排查与修复。</strong>基线探查发现 Agent 5 次自动尝试全部失败。深挖修复三个 P0 问题。其一，缺 action_level label 时策略服务 fallback 到 L1，导致无关告警也触发自动降级，改为显式 skip。其二，PowerShell 脚本无 BOM 配 UTF-8 与中文注释，被 Windows PS 5.1 按 GBK 误解析，加 UTF-8 BOM 后解决。其三，bind-mount 配 ro 与 BusyBox cp 的限制使容器内覆写不生效，新增 active.conf 作为可写挂载点，改为宿主 Copy-Item 与 docker exec nginx -s reload 的方案。修复后 L1 首次真正在生产配置上生效。</div>
+          <div class="detail-arch-item"><strong>实验二 · 注入式触发内部链路验证。</strong>绕过 Prometheus 与 Alertmanager，直接 POST context 至 /api/aiops/diagnose/context，验证 Agent 决策、policy、executor、ps1 与 conf 切换的内部链路。4 秒内观测到网关切换至 degraded 模式，conf 差异对比 MATCH，nginx -T 验证限流配置（zone=seckill_limit rate=20r/s）已生效。</div>
+          <div class="detail-arch-item"><strong>实验三 · 端到端真链路生产验证。</strong>临时下调 NginxHighRequestRate 阈值至 rate 10 RPS、for 30s，用 4 路 bash 负载压网关约 280 RPS。观测到告警在 Prometheus scrape 累积后进入 pending，30 秒后转 firing，Alertmanager group_wait 10 秒后 webhook 触发 Agent 决策与执行。完整链路约 75 秒（15 秒 scrape + 30 秒 for + 10 秒 group_wait + 约 3 秒 agent）。触发详情记录 trigger_source=alertmanager 而非 manual，证明端到端链路贯通。压测共发送 2283 个请求，Agent 无误动作。</div>
+          <div class="detail-arch-item"><strong>实验四 · OpenTelemetry 链路追踪集成。</strong>分七个 phase 完成。第一，下载 OTel javaagent 2.10.0（21MB，阿里云 Maven 镜像）与 Jaeger all-in-one（1panel 国内镜像）。第二，五个 Java service 加 javaagent 挂载与若干 OTEL_* 环境变量。第三，改 Flink RawSeckillEvent、Transaction、RocketMQSeckillSource、DataStreamJob，实现 W3C traceparent 跨 RocketMQ 异步边界透传。第四，PG transactions 加 trace_id 列与 partial index。第五，实现 trace_server.py 五个工具。第六，business_server 加 find_traces_for_sku 跨层关联。第七，重打 Flink jar 并重提 job。端到端验证：customer_id 为 20260505 的订单在 PG 的 trace_id 为 fc94ffc...，Jaeger 反查显示 36 个 span 横跨五个 service 的完整下单链路。</div>
+          <div class="detail-arch-item"><strong>实验五 · Agent 自主调用 Trace 工具的 RCA 验证。</strong>触发 SeckillLatencyP99High 告警后，Agent 自主生成 6 步诊断计划。第一步用 Prometheus PromQL 确认 P99；第二步调用 find_slow_traces 锁定最慢 5 条链路；第三步对最慢链路调用 span_breakdown 拆耗时；第四步在 Redis 或 MQ 异常时回查 Prometheus 具体指标；第五步在 MySQL 慢查询场景下查询 mysql_global_status_slow_queries；第六步综合根因报告。第二步与第三步对 trace 工具的选用由 LLM 根据 RCA 三支柱 prompt 与工具描述自主决策完成。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">核心职责</div>
+        <div class="detail-section-content">
+          <strong>整体定位。</strong>独立负责系统全栈设计、架构与落地验证。
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>业务层。</strong>基于 Apache Dubbo 2.7.8、RocketMQ 5.0.7 与 Spring Boot 的秒杀微服务架构，含五个 Java 业务进程，网关三套配置模板（normal、degraded、lite）的参数调优。</div>
+          <div class="detail-arch-item"><strong>流处理层。</strong>Flink 1.18 DataStreamJob 的四路聚合拓扑、enricher（Caffeine 10min 缓存）、dedup（ValueState）以及 sink 至 PG 与 ES 的并发与幂等性保证（ON CONFLICT 与 IndexRequest.id）。</div>
+          <div class="detail-arch-item"><strong>可观测层。</strong>八维度 exporter、17 条告警规则、L1/L2/L3 分级与 action_level 标签体系，Alertmanager 的 group_wait、group_interval 与 repeat_interval 路由策略。</div>
+          <div class="detail-arch-item"><strong>链路追踪层。</strong>OpenTelemetry javaagent 字节码自动埋点五个 Java service，Jaeger 后端集成，RocketMQ 至 Flink 跨异步边界 traceparent 透传（手动 W3C 解析），PG transactions schema 扩展，Grafana Jaeger datasource provisioning。</div>
+          <div class="detail-arch-item"><strong>Agent 运维层。</strong>LangGraph Plan-Execute-Replan 的三节点工作流与状态转移设计，24 个 MCP 工具的接口与权限模型（4 个 Server），degrade_policy_service 的 4 道闸门与 cooldown 双键设计，脚本化执行器（PowerShell 跨平台适配），history 表与审计日志。</div>
+          <div class="detail-arch-item"><strong>Agent 决策层。</strong>Planner prompt 内置 RCA 三支柱决策树与示例 plan，Replanner 元 CoT 安全闸（MAX_STEPS、replan 限制），Pydantic 结构化输出强约束。</div>
+          <div class="detail-arch-item"><strong>调研与改进规划。</strong>系统性梳理业界 AIOps 项目（HolmesGPT、AgentCore SRE、Robusta）与 Agent Runtime 安全设计（Anthropic Capability、DeepMind CaMeL、LangGraph Interrupt、Intent-based pattern），输出 1391 行 markdown 架构报告与改进 ROI 排序。</div>
+          <div class="detail-arch-item"><strong>工程验证。</strong>发现并修复 4 个 P0 bug（label fallback、PowerShell 编码、mount 与 cp 问题、nginx upstream DNS 缓存），完成 5 组端到端实验。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">量化效果</div>
+        <div class="detail-effects">
+          <div class="effect-card">
+            <div class="num">31</div>
+            <div class="label">Docker 容器数</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">24</div>
+            <div class="label">MCP 工具数（4 个 Server）</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">5</div>
+            <div class="label">Java 服务全 OTel 自动埋点</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">36</div>
+            <div class="label">单条订单 trace span 数</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~10ms</div>
+            <div class="label">秒杀链路平均延迟</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~70ms</div>
+            <div class="label">80 并发下 P95 响应延迟</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~500ms</div>
+            <div class="label">L1 网关切换执行时间</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~3.0s</div>
+            <div class="label">Agent 内部决策与执行时间</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">~75s</div>
+            <div class="label">告警到 L1 降级完整链路</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">5</div>
+            <div class="label">端到端实验组数</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">1391</div>
+            <div class="label">架构报告与调研文档行数</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">4</div>
+            <div class="label">P0 隐藏 bug 排查修复</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">关键打通的链路</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>业务观测链。</strong>秒杀下单（RocketMQ 事件，含 traceparent）至 Flink 四路聚合（含 trace_id 透传）至 PostgreSQL（SKU、活动、类目、失败率与 transactions.trace_id）与 Elasticsearch（明细与 trace_id field）。</div>
+          <div class="detail-arch-item"><strong>全链路追踪链。</strong>五个 Java service OTel javaagent 字节码埋点至 OTLP gRPC :4317 至 Jaeger collector 至 Jaeger UI :16686 与 Grafana Jaeger datasource。</div>
+          <div class="detail-arch-item"><strong>跨层关联链。</strong>业务热点 SKU（business.query_sku_rate）至 ES 与 PG 查 trace_id 列（business.find_traces_for_sku）至 Jaeger 拉完整链路（trace.query_trace_by_id 与 span_breakdown），将业务热点定位与链路根因诊断串通。</div>
+          <div class="detail-arch-item"><strong>告警链。</strong>八维度 exporter 至 Prometheus 17 条规则评估，Alertmanager group_wait、group_interval、repeat_interval 三层延迟控制，webhook fingerprint 去重至 Agent FastAPI。</div>
+          <div class="detail-arch-item"><strong>Agent 决策链。</strong>webhook context 至 policy service 4 道闸门（enabled、action_level、cooldown、level），executor subprocess.run powershell 至 gateway 宿主 Copy-Item 与 nginx -s reload，最终落地 history 记录。</div>
+          <div class="detail-arch-item"><strong>Agent 诊断链。</strong>告警 context 至 LangGraph planner（RCA 三支柱 prompt 引导 LLM 自主选择 trace 工具），生成 6 步计划，executor 逐步调用 24 个 MCP 工具，replanner 元 CoT 安全闸校验，最终生成四段式报告。</div>
+        </div>
+        <div class="detail-section-content">
+          <strong>整体闭环。</strong>系统从业务事件经聚合分析与全链路追踪到自动决策的闭环完整打通，支持人工 curl 触发、告警自动触发与定时巡检三种触发模式。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">Java 8</span><span class="tag">Spring Boot</span><span class="tag">Apache Dubbo 2.7.8</span><span class="tag">Nacos 1.4.2</span><span class="tag">RocketMQ 5.0.7</span><span class="tag">MySQL 8.0</span><span class="tag">Redis 7</span><span class="tag">PostgreSQL 16</span><span class="tag">Elasticsearch 7</span><span class="tag">Kibana</span><span class="tag">Flink 1.18 DataStream</span><span class="tag">Caffeine</span><span class="tag">JdbcSink</span><span class="tag">Nginx 1.27</span><span class="tag">Prometheus 2.53</span><span class="tag">PromQL</span><span class="tag">Alertmanager 0.27</span><span class="tag">Grafana 11.3</span><span class="tag">cAdvisor</span><span class="tag">blackbox-exporter</span><span class="tag">OpenTelemetry Java Agent 2.10</span><span class="tag">OTLP gRPC</span><span class="tag">W3C Trace Context</span><span class="tag">Jaeger 1.x</span><span class="tag">FastAPI</span><span class="tag">Pydantic v2</span><span class="tag">LangGraph</span><span class="tag">LangChain</span><span class="tag">Qwen-Max (DashScope)</span><span class="tag">MCP 2025-03 spec</span><span class="tag">FastMCP</span><span class="tag">langchain-mcp-adapters</span><span class="tag">LLaMA-Factory</span><span class="tag">DeepSpeed ZeRO</span><span class="tag">LoRA</span><span class="tag">vLLM</span><span class="tag">Python 3.11</span><span class="tag">PowerShell 5.1</span><span class="tag">Docker Compose v2</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun · Built from scratch</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长安链 MaxBFT 共识算法纠错与增强 — 蔡嘉骏</title>
+<meta name="description" content="针对 MaxBFT 视图切换和提交流程的高可用性优化。设计 NData 和 AggQC 机制。全国第 8 名。">
+<link rel="canonical" href="https://jdkjdkjdk.top/projects/maxbft.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#awards">荣誉</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#projects" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">🏆 全国第 8 名 · 竞赛队长 · 2026.03</div>
+    <h1 class="detail-title serif">长安链 MaxBFT 共识算法纠错与增强</h1>
+    <p class="detail-desc reveal">
+      针对长安链（ChainMaker）MaxBFT 共识算法在视图切换和区块确认过程中存在的效率瓶颈，设计并实现了面向高可用性的改进方案。核心创新包括：① <strong>NData 机制</strong>——补全 New-View 消息协议，通过节点主动上报 highQC 实现视图切换状态同步，解决信息孤岛问题；② <strong>AggQC 机制</strong>——引入聚合签名对投票进行压缩，将三阶段提交优化为两阶段，降低确认延迟。双机制协同优化了活性（Liveness）与性能（Latency）两个维度。系统在 10,000 个区块的实验验证中达到 41.5ms 平均共识延迟和 200ms 级故障自愈速度，在全国竞赛中获得第 8 名。
+    </p>
+
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">长安链 ChainMaker 系统架构（项目背景）</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">长安链总览：国产开源联盟链底层平台</div>
+        <div class="detail-section-content">
+          长安链（ChainMaker）是由北京微芯研究院联合清华大学、北航、腾讯、百度等机构共同打造的<strong>国产开源联盟链底层软件平台</strong>，2020 年开源、采用友好开源协议，目标是为金融、供应链、政务、能源等场景提供高性能、高可信、高安全的分布式数字基础设施。<br><br>
+          官方公布的运算速度超过 <strong>10 万 TPS</strong>，支持 <strong>SOLO / TBFT / MaxBFT / RAFT / DPoS / ABFT</strong> 六种可插拔共识机制，支持基于 DAG 的块内交易并行调度、NAT 穿透下的大规模组网、并行多链与国密算法。本项目聚焦其中的 MaxBFT 共识算法，做工程化的活性恢复与提交效率改进。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">五层平台架构</div>
+        <div class="detail-section-content">
+          长安链平台采用自下而上的五层架构（外加运维 / 安全 / 配置三个横切支撑模块）：① 存储资源层（LevelDB / BadgerDB / MySQL / TDSQL / TiKV 多存储后端）；② 基础组件层（密码 crypto、证书 cert、日志 logger、配置 conf、消息总线 mqbus 等）；③ 核心模块层（RPC 服务、链管理、链配置、交易缓存、区块执行、链账户、提案器、共识算法、虚拟机 / 合约引擎、订阅器、网络同步器、链外可信桥等）；④ 接入层（多语言 SDK：Go / Java / Node.js / Python）；⑤ 前端应用层（区块链浏览器、管理平台、合约 IDE、DApp / 客户端）。MaxBFT 作为<strong>核心模块层中可插拔的共识引擎之一</strong>，与提案器 / 区块执行 / 网络同步等模块协同。
+        </div>
+        <div style="text-align:center;margin:20px 0;">
+          <img src="./img/chainmaker_arch_hierarchy.png" alt="长安链五层架构图" style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:8px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">长安链五层平台架构（图源：<a href="https://docs.chainmaker.org.cn/tech/%E6%95%B4%E4%BD%93%E8%AF%B4%E6%98%8E.html" target="_blank" rel="noopener" style="color:var(--accent);">长安链官方文档</a>）。本项目对图中"核心模块层"的 consensus 共识引擎进行 MaxBFT 增强。</p>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">逻辑节点拓扑：共识 / 同步 / 轻节点</div>
+        <div class="detail-section-content">
+          长安链网络中节点按职责分为三类：<strong>共识节点</strong>参与共识投票、产生与确认区块，是 MaxBFT 协议的执行主体；<strong>同步节点</strong>不参与共识但同步全量账本、对外提供查询；<strong>轻节点</strong>只保存区块头与必要状态，面向资源受限的客户端 / 应用接入。SDK、浏览器、管理平台、合约 IDE、命令行工具集（cmc）通过统一 SDK 接口与链交互。本项目的实验场景是 <strong>4 节点共识网络</strong>，所有节点都作为共识节点参与 MaxBFT 协议。
+        </div>
+        <div style="text-align:center;margin:20px 0;">
+          <img src="./img/chainmaker_arch_logical.png" alt="长安链逻辑架构" style="max-width:80%;height:auto;border-radius:8px;background:#fff;padding:8px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">长安链逻辑节点拓扑：共识节点 / 同步节点 / 轻节点 + 上层 SDK 与工具集（图源：<a href="https://docs.chainmaker.org.cn/tech/%E6%95%B4%E4%BD%93%E8%AF%B4%E6%98%8E.html" target="_blank" rel="noopener" style="color:var(--accent);">长安链官方文档</a>）</p>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">区块生成核心流程：Propose → Consensus → Verify → Execute</div>
+        <div class="detail-section-content">
+          长安链区块产生由四阶段流水线组成：① <strong>提议候选区块</strong>——提议节点从交易缓存模块取交易、查数据存储模块取数据快照，由区块提议模块构造候选区块，再交给交易调度模块通过智能合约模块执行得到结果；② <strong>共识候选区块</strong>——候选区块通过 P2P 对等网络在共识算法模块（即 MaxBFT 模块）间投票收敛；③ <strong>验证候选区块</strong>——验证节点根据数据快照独立重放执行，输出验证结果反馈给共识层；④ <strong>执行候选区块</strong>——共识通过的区块由区块执行模块提交到数据存储，并通知交易缓存模块清理已上链交易。<br><br>
+          本项目优化的是<strong>第 ② 阶段（共识候选区块）</strong>——通过 NData 机制完善 New-View 状态同步、通过 AggQC 把三阶段提交压缩为两阶段，从协议层面缩短"投票收敛"耗时与"视图切换"恢复时间。
+        </div>
+        <div style="text-align:center;margin:20px 0;">
+          <img src="./img/chainmaker_core_processes.png" alt="长安链区块生成核心流程" style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:8px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">区块产生四阶段流水线：提议 → 共识 → 验证 → 执行；本项目工作位于"共识"阶段（图源：<a href="https://docs.chainmaker.org.cn/tech/%E6%95%B4%E4%BD%93%E8%AF%B4%E6%98%8E.html" target="_blank" rel="noopener" style="color:var(--accent);">长安链官方文档</a>）</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">问题与创新方案</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">核心问题分析</div>
+        <div class="detail-section-content">
+          <strong>活性恢复缓慢：</strong>原版 MaxBFT 未完整实现 New-View 消息机制。当主节点故障或网络抖动时，各节点状态无法有效汇聚，新 Leader 难以快速确定全网一致性边界，系统陷入"共识停摆"或"视图震荡"状态，活性恢复时间从理论毫秒级延长到秒级。
+          <br/><br/>
+          <strong>提交效率不足：</strong>沿用 HotStuff 的三阶段提交流程（3-Chain Commit），在高延迟或频繁视图切换场景下引入额外通信开销。投票消息缺乏有效聚合机制，网络带宽占用高，节点验证成本高。
+          <br/><br/>
+          <strong>场景落地受限：</strong>"理论优越但工程受限"的现状严重制约了国产联盟链在金融交易、供应链金融等对可用性要求极高的场景下的落地应用。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">核心创新方案</div>
+        <div class="detail-section-content" style="text-align: center; margin: 20px 0;">
+          <img src="./img/maxbft_slide_render_7.png" alt="MaxBFT 改进方案架构" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <p style="font-size: 14px; color: #666; margin-top: 10px;">双通道驱动的共识内核：NData 机制 + AggQC 快速提交</p>
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>创新点 01：NData 视图切换状态同步机制</strong><br/>
+          补全并实现了 NData（New-View Data）消息机制。节点在视图切换时主动上报本地最高 QC（highQC），新 Leader 在收集到法定数量（N-f）的 NData 后，选取最高状态作为新提案的依据。核心价值：从协议层面解决了视图切换中的"信息孤岛"问题，使系统在异常场景下能更快完成状态收敛与视图恢复。</div>
+
+          <div class="detail-arch-item"><strong>创新点 02：AggQC 快速提交机制</strong><br/>
+          引入 AggQC（Aggregated Quorum Certificate）机制，结合聚合签名对多副本投票进行压缩与聚合，将传统三阶段提交流程优化为两阶段提交。核心技术：使用 BLS 聚合签名对（N-f）个 NData 的投票进行聚合，将证明压缩到可广播大小。核心价值：有效降低了区块确认延迟，减少网络冗余消息开销与节点验证成本。</div>
+
+          <div class="detail-arch-item"><strong>双通道驱动的共识内核</strong><br/>
+          常规通道（正常快路径）：Proposal → Vote → QC → 视图推进，适用于 Leader 正常工作的情况，延续原 MaxBFT 的流水线优势。<br/>
+          换届通道（超时恢复路径）：Timeout → NData 收集 → highQC 选择 → 携证提案，适用于 Leader 失效或网络抖动导致常规通道无法形成 QC 的情况。</div>
+
+          <div class="detail-arch-item"><strong>Event-Driven Pacemaker</strong><br/>
+          从"本地换届"升级为"以 QC/highQC 驱动的对齐"，消除视图漂移。Event-Driven 架构消除轮询等待，使系统在异常场景下更快做出反应。新增 NCollector（NewView 收集器）缓存与验证 NData，输出 highQC 和 AggQCProof。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">压测框架与实验验证</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">压测框架：Docker + GoMock + Prometheus + Grafana</div>
+        <div class="detail-section-content">
+          为了在改进的 MaxBFT 上做可重复的协议级性能验证，自建了一套<strong>分布式压测框架</strong>，核心思路是把 ChainMaker 节点容器化、把交易源 / 故障注入做成可控变量、把性能指标做成可观测时间序列。
+        </div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>① 节点容器化（Docker Compose）：</strong>用 Docker Compose 编排 4 个 ChainMaker 共识节点 + 1 个客户端 + 1 个 Prometheus + 1 个 Grafana 共 7 个容器，模拟标准的 BFT 4 节点（n = 3f + 1，可容忍 f = 1 拜占庭故障）网络。每个共识节点跑改进过的 MaxBFT 模块，通过 P2P 对等网络互联。</div>
+
+          <div class="detail-arch-item"><strong>② 交易压力源（CMC + 自定义客户端）：</strong>使用长安链官方 cmc 命令行工具 + Go SDK 编写自定义压测客户端，按可配置 TPS（每秒交易数）持续发交易到主节点，覆盖三类场景：基准压测（持续稳态写入 10,000 区块）、突发流量（脉冲式高 TPS）、慢节点（人为引入网络延迟）。</div>
+
+          <div class="detail-arch-item"><strong>③ 故障注入（GoMock + 网络扰动）：</strong>用 GoMock 在共识模块单测中模拟"消息丢失"、"投票延迟"、"Leader 失联"三类异常；在容器层用 tc / iptables 注入网络延迟与丢包；在应用层手动 kill 某个共识节点的 docker 容器以验证视图切换与故障自愈速度。</div>
+
+          <div class="detail-arch-item"><strong>④ 指标采集（Prometheus + Grafana）：</strong>在 MaxBFT 模块内部埋点暴露 Prometheus 指标——共识延迟、视图切换次数、QC 形成耗时、NData 收集耗时、AggQC 聚合签名耗时、提案权分布、节点间消息数。Prometheus 每 5 秒抓取一次，Grafana 实时画出延迟曲线、视图切换波形、节点提案分布。</div>
+
+          <div class="detail-arch-item"><strong>⑤ 实验自动化（Shell 脚本 + 日志解析）：</strong>用 Shell 脚本自动化"启动容器 → 跑 N 分钟压测 → 注入故障 → 等待恢复 → 收集 Prometheus 数据 → 输出 CSV 报告"全流程；用 Python 脚本对 N 轮重复实验做统计聚合，输出平均共识延迟、RTO（故障恢复时间）、提案权变异系数等关键指标。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">实验与验证</div>
+        <div class="detail-section-content" style="margin-bottom: 20px;">
+          <div style="text-align: center; margin: 20px 0;">
+            <img src="./img/maxbft_slide_render_8.png" alt="性能测试结果" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <p style="font-size: 12px; color: #666; margin-top: 8px;">10,000 区块级别系统性能测试与实验分析</p>
+          </div>
+        </div>
+        <div class="detail-section-content">
+          <strong>实验环境：</strong>4 节点分布式网络，基于 Event-Driven 架构的 Go 实现。
+          <br/><br/>
+          <strong>性能指标（基于 10,000 区块统计）：</strong>
+          <br/>• 平均共识延迟：<strong>41.5ms</strong>（Event-Driven 消除轮询等待）
+          <br/>• 故障自愈速度：<strong>200ms 级</strong>（RTO 缩短比例 >90%）
+          <br/>• 提案权变异系数：<strong>≈0</strong>（完美负载均衡）
+          <br/>• 通信覆盖度：<strong>均匀</strong>（节点间交互次数一致）
+          <br/><br/>
+          <strong>架构收益：</strong>活性增强 · 收敛更快 · 工程可控 · 通信成本可控（3 阶段 → 2 阶段，通信复杂度 O(n)）
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">量化效果</div>
+        <div class="detail-effects">
+          <div class="effect-card">
+            <div class="num">41.5ms</div>
+            <div class="label">平均共识延迟</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">200ms</div>
+            <div class="label">故障自愈速度</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">>90%</div>
+            <div class="label">RTO 缩短比例</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">3→2</div>
+            <div class="label">阶段优化</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">O(n)</div>
+            <div class="label">通信复杂度</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">🏆 8th</div>
+            <div class="label">全国竞赛排名</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-4">
+      <h2 class="detail-layer-title">个人产出</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">核心职责</div>
+        <div class="detail-section-content">
+          担任竞赛队长，主导整体方案设计与实现。负责：
+          <br/>• 共识算法深度分析与问题诊断（MaxBFT 视图切换、提交流程的工程缺陷）
+          <br/>• 协议改进方案设计与理论验证（NData 和 AggQC 机制的完整设计）
+          <br/>• 核心代码编写（Engine、Pacemaker、Validator、NCollector 模块的 Go 实现）
+          <br/>• 分布式实验环境搭建（Docker + GoMock + Prometheus/Grafana 监控）
+          <br/>• 性能基准测试与优化（10,000 区块级别的系统级验证）
+          <br/>• 团队协调与技术路线规划
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">Go</span><span class="tag">ChainMaker</span><span class="tag">MaxBFT</span><span class="tag">BFT 共识</span><span class="tag">Event-Driven</span><span class="tag">BLS 聚合签名</span><span class="tag">WAL</span><span class="tag">Docker</span><span class="tag">GoMock</span><span class="tag">Prometheus</span><span class="tag">Grafana</span><span class="tag">分布式系统</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun · Built from scratch</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太赫兹卫星网络协议栈与智能路由仿真 — 蔡嘉骏</title>
+<meta name="description" content="国家重点项目「太赫兹组网仿真技术研究」：基于 MATLAB + OPNET 双仿真平台对 225 LEO + 5 GEO 太赫兹卫星网络做接入 / MAC / 4 种路由算法（Route Balance / A* / 蚁群 / Q-learning + SDN）的协议级仿真验证。">
+<link rel="canonical" href="https://jdkjdkjdk.top/projects/satellite-qos.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#projects" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">北邮 × 国家重点项目 · 太赫兹组网仿真 · 2024.09 – 2025</div>
+    <h1 class="detail-title serif">太赫兹卫星网络协议栈与智能路由仿真</h1>
+    <p class="detail-desc reveal">
+      国家重点项目「太赫兹组网仿真技术研究」的核心研发任务。一方面构建基于 MATLAB（链路仿真）+ OPNET（网络仿真）+ Python（强化学习）的联合仿真平台，对 220 GHz 太赫兹频段下 225 颗 LEO + 5 颗 GEO 卫星网络做端到端协议级验证；另一方面在 SDN 架构下提出 <strong>QMR + DDPG 多径路由算法</strong>（论文草稿《结合 QoS 感知与深度强化学习的低轨卫星网络多径路由算法》），相比 ECMP 等价多路径路由端到端时延降低 15%。算法的工程化扩展申请发明专利《一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法》（正在发表）。
+      <br>
+      ① 研究背景与目标：低轨卫星网络动态拓扑 + 太赫兹强大气吸收与窄波束失准 + 多业务差异化 QoS 需求三重挑战，传统静态路由难以适应；纯分布式架构受限于局部观测、纯地面集中控制受限于长距离星地链路传播时延。该层确立研究目标——平衡"全局视野"与"决策时延"两个维度。
+      <br>
+      ② 太赫兹物理与 MATLAB 链路仿真：基于 ITU-R P.618 建立自由空间 + 分子吸收 + 云雾 + 降雨四分量损耗模型，对 220 GHz 高斯主波束建模与卫星摄动下波束失准影响仿真。该层为上层 OPNET 仿真提供物理可行性边界与管道扰动模型。
+      <br>
+      ③ OPNET 仿真平台与节点架构：构建 225 LEO（15 轨道 × 15 颗）+ 5 GEO + 1 地面站 + 3 用户节点（飞机 / 汽车 / 船舶）的全球拓扑；每类节点由 source / route / mac / antenna 等模块组成，业务采用 on-off 模型覆盖 voice / video / remote_sensing 三类对应 4 级 QoS。该层是整个项目的仿真主战场。
+      <br>
+      ④ 接入与 MAC 协议设计：星地接入由 6 状态机（init / idle / BScomrcv / BScomsend / SATcomrcv / business）实现；星间 MAC 采用 TDMA 4 状态超帧（init → BroadcastInfo → CreateLink → TransData），每颗卫星 4 个方向独立链路；针对太赫兹弱连接特性引入周期性 Hello 包检测 + 链路切换。该层提供"业务可达"的传输底座。
+      <br>
+      ⑤ 路由算法研究：QMR + DDPG。在 SDN 控制平面（地面控制中心 NCC）部署 QMR 算法做 QoS 感知的多径生成，再由 DDPG 智能体对候选路径做连续动作空间的实时流量分配；改进 DDPG 的奖励函数与网络结构以加速在动态拓扑下的收敛。相比 ECMP 端到端时延降低 15%、弹性场景下时延 / 吞吐 / 丢包均获 5% 增益。该层是项目的核心算法创新。
+      <br>
+      ⑥ 系统验证与产出：协议功能测试、网络性能指标（时延 / 负载 / 吞吐 / 丢包）、量化效果、个人职责、衍生专利与完整技术栈。
+    </p>
+
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">研究背景与目标</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">三重挑战与设计约束</div>
+        <div class="detail-section-content">
+          太赫兹卫星网络承载未来天地一体化通信的关键骨干，但面临三重相互交织的挑战。第一，低轨卫星拓扑高动态——卫星 7.6 km/s 的相对速度叠加跨轨切换，使得网络拓扑分钟级即变；第二，太赫兹频段强大气吸收（水汽 / 氧气分子吸收）与窄波束（俯仰 / 方位角 1° 量级）特性，意味着波束失准与天气扰动会显著降低链路质量；第三，承载业务从语音到遥感差异巨大，需要分级 QoS 保障。任何单一架构（纯地面集中控制 / 纯卫星分布式决策）都难以同时兼顾"全局视野"与"决策时延"，需要在物理层、协议栈、路由算法多个层次协同优化。
+          <br><br>
+          项目目标是构建一套从太赫兹物理链路仿真到协议级网络仿真的完整双平台，验证在 225 颗 LEO + 5 颗 GEO 全球级拓扑下接入、MAC、路由算法的可行性与性能边界，并探索 SDN 集中调度与智能算法在大规模卫星网络的应用空间。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">太赫兹物理与 MATLAB 链路仿真</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">ITU-R P.618 四分量损耗模型</div>
+        <div class="detail-section-content">
+          基于 ITU-R P.618 复合衰减计算方法对 220 GHz 太赫兹星地链路建立四分量损耗模型：自由空间损耗（基于距离与频率）、分子吸收损耗（基于 ITU-R 大气模型，由温度 / 湿度 / 气压决定的复折射率）、云雾衰减损耗（基于液态水柱含量与通信仰角）、降雨衰减损耗（基于 0.01% 时间概率降雨衰减率）。四分量叠加后输出综合传输损耗，为 OPNET 管道模型的 txgain 参数提供物理依据。
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">高斯主波束建模与摄动影响</div>
+        <div class="detail-section-content">
+          采用高斯主波束模型刻画 220 GHz 窄波束方向图。仿真发送波束俯仰面波宽 0.784°、方位面波宽 0.160°、最大天线增益 53 dBi；接收波束俯仰面 0.79°、方位面 0.18°、增益 53 dBi。同时仿真卫星摄动（轨道扰动）对天线指向的影响：当波束失准角度误差超过 1° 时，发送波束指向接收波束旁瓣，链路质量达到最差并不再随失准增大。把卫星摄动对链路质量的影响拟合成函数添加到 OPNET 管道模型 txgain 中，使协议级仿真也能感知物理层扰动。
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0;">
+          <div style="text-align:center;">
+            <img src="./img/thz_antenna_tx_pattern.png" alt="220 GHz 太赫兹发送主波束方向图" style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:6px;">
+            <p style="font-size:12px;color:var(--text3);margin-top:8px;">220 GHz 发送主波束方向图（高斯模型，俯仰 0.784° / 方位 0.160°）</p>
+          </div>
+          <div style="text-align:center;">
+            <img src="./img/thz_antenna_rx_pattern.png" alt="220 GHz 太赫兹接收主波束方向图" style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:6px;">
+            <p style="font-size:12px;color:var(--text3);margin-top:8px;">220 GHz 接收主波束方向图（俯仰 0.79° / 方位 0.18°，增益 53 dBi）</p>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">多尺度弱连接特性仿真</div>
+        <div class="detail-section-content">
+          在 STK 中分别仿真单轨道 5 / 10 / 15 颗卫星均匀分布场景，验证卫星密度对地面用户链路连续性的影响；并对地面行人、海上轮船、一般飞机、高空高速飞行器四类不同弱连接用户分别建模，结果显示链路质量主要由路径损耗（用户高度）决定，用户运动速度（最高 1 马赫）相对于 LEO 卫星 7.6 km/s 的速度可忽略，故四类用户切换频率基本相同。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">OPNET 仿真平台与节点架构</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">仿真场景与全球拓扑</div>
+        <div class="detail-section-content">
+          OPNET 仿真平台构建 4 类节点的全球级拓扑：225 颗 LEO（15 轨道 × 15 颗，命名规则"轨道号 + 轨道内卫星编号"，地址 = (轨道号 - 1) × 15 + 卫星编号 - 1）、5 颗 GEO 同步轨道卫星、1 个地面站、3 个用户节点（飞机 / 汽车 / 船舶）。RxGroup Config 模块按设定规则实时维护拓扑：每 60 秒更新一次，每颗卫星与前 / 后 / 左 / 右四颗邻居保持连接；当卫星运行至纬度 > 50° 时主动断开异轨连接（高纬度区域相对运动速度过大），仅保留同轨链路。Walker 星座模型下区分两类星间链路：平面内链路（同轨）始终可用，平面间链路（跨轨）在极区暂时断开。该平台为上层 QMR + DDPG 算法仿真提供"开箱即用"的协议级仿真环境。
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <img src="./img/thz_design_p7_i1.jpeg" alt="OPNET 仿真场景：225 LEO + 5 GEO + 用户节点" style="max-width:100%;height:auto;border-radius:8px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">OPNET 全球仿真场景：蓝色为 LEO 卫星、红色为 GEO 同步轨道卫星，黄色 / 红色轨迹为运行轨道，绿色与黑色节点为地面站与用户</p>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">节点类型与内部模块</div>
+        <div class="detail-section-content">
+          每类节点由协议栈分层模块组成：用户节点包含 voice / video / remote_sensing 三类业务源、业务转发、airplaneMAC、q_1 队列、太赫兹收发机（rt_sat / rr_sat，业务信道 + 控制信道）与低频收发机（rt_bs / rr_bs，连接地面站）；LEO 卫星包含 source、route、mac0 / mac1 / mac2 / mac3（前 / 后 / 左 / 右四方向星间链路）、macToGEO（连同步轨道）、macToground（连地面站）+ 对应天线；GEO 节点协调跨同步轨道卫星与覆盖区域内 LEO；地面站节点处理用户接入请求与位置查询。
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <img src="./img/thz_design_p39_i1.png" alt="LEO 卫星节点模型：source/sink/route/MAC/收发机/天线" style="max-width:75%;height:auto;border-radius:8px;background:#fff;padding:12px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">LEO 卫星节点协议栈：source / sink / route / 4 个方向 mac + macToGEO / macToground，每个 mac 配套 rt（发）/ rr（收）/ an（天线）三件套</p>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">业务模型与 4 级 QoS</div>
+        <div class="detail-section-content">
+          业务采用 on-off 模型配置不同 on / off 时间、包间隔、包长。三类业务对应不同的 QoS 等级（按 node_id 末位映射）：voice_service（语音通话，对实时性要求最高）、video_service（视频传输，对带宽要求高）、remote_sensing（遥感图像，对可靠性要求高）。MAC 层维护四级优先队列，按业务优先级在数据传输帧中调度发送。该业务模型既验证多业务差异化 QoS 保障，也支撑后续对路由算法的吞吐 / 时延 / 丢包率分级评测。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-4">
+      <h2 class="detail-layer-title">接入与 MAC 协议设计</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">星地接入协议（用户 ↔ 地面站 ↔ 卫星）</div>
+        <div class="detail-section-content">
+          用户接入由 6 状态 MAC 进程实现：init（初始化 + 注册接入自中断）→ idle（阻塞等待事件）→ BScomsend（向地面站发送 air_to_bs_access 接入请求帧）→ BScomrcv（接收地面站返回的允许接入 / 切换帧并更新本地时隙表，必要时向原卫星发送 air_to_sat_withdraw_net 退网帧）→ SATcomrcv（接收来自接入卫星的切换测量报告，评估是否触发切换；触发则发 air_to_bs_handover）→ business（处理上层 voice / video / remote_sensing 业务并按 QoS 封装下发）。地面站负责寻找距离用户最近的卫星并撮合接入；接入卫星按业务请求分配时隙、带宽、频率、功率。
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">星间 MAC：TDMA 4 状态超帧</div>
+        <div class="detail-section-content">
+          星间链路采用 TDMA 时分多址，每颗卫星 4 个方向独立全双工链路。MAC 模块由 4 状态机实现网络运行：init（网络初始化超帧，调度首个事件并注册统计量）→ BroadcastInfo（信息广播帧，等待 GEO / 地面站广播的拓扑表，收到后更新路由；上层业务包暂存队列，等待 TransData 再发）→ CreateLink（链路建立帧，参照拓扑表调整天线指向，向有连接的邻居发送 Hello 包）→ TransData（数据传输帧，按四级业务优先级从队列调度发包）。一个常规超帧时长约 0.18 s（BroadcastInfo 0.15 s + CreateLink 0.03 s + 数据传输），周期性循环。
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <img src="./img/thz_design_p51_i1.png" alt="星间 MAC TDMA 4 状态超帧状态机" style="max-width:90%;height:auto;border-radius:8px;background:#fff;padding:12px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">星间 MAC 进程模型：init → BroadcastInfo → CreateLink → TransData 四状态超帧</p>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">弱连接处理：Hello / ACK 与切换</div>
+        <div class="detail-section-content">
+          针对太赫兹窄波束 + 大气扰动导致的链路弱连接特性，每颗卫星在 CreateLink 帧周期性向 4 个方向邻居发送 Hello 包并等待 Hello-ACK；ACK 超时则判定链路中断、触发路由层路由重构。用户侧针对地面 / 海上 / 民航 / 高空四类不同弱连接场景，根据接入卫星的切换测量报告（信号强度、覆盖剩余时间、空闲信道数）动态选择最佳目标卫星，完成无缝切换。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-5">
+      <h2 class="detail-layer-title">路由算法研究：QMR + DDPG（核心职责）</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">论文与系统建模</div>
+        <div class="detail-section-content">
+          针对低轨卫星网络动态拓扑 + 频繁链路中断 + 流量负载不均衡三重挑战，本研究提出融合 QoS 感知多径路由（QoS-aware Multipath Routing, QMR）与深度强化学习的弹性路由算法，组成两段式方案：第一段 QMR 基于业务 QoS 敏感度做多径生成；第二段改进 DDPG（Deep Deterministic Policy Gradient）智能体在 QMR 给出的候选路径集上做连续动作空间的实时流量分配。整体部署在 SDN 架构下——地面控制中心（NCC）作为控制平面收集全网链路状态、做 QoS 业务分级、计算路径与分流权重并下发；LEO 卫星作为数据平面按下发规则做转发，并周期性 Hello 包检测邻居链路、经 GEO 上报中心。
+          <br><br>
+          系统建模：把卫星网络抽象为图 G(V, E)，V 为卫星节点集合，E 为星间链路（ISL）集合，区分平面内 ISL（同轨稳定）与平面间 ISL（跨轨，极区断开）。M 对源-目的节点 (s_m, d_m) 各承载一种业务，需为每对生成 K 条候选路径并分配流量比例 ω_m ∈ ℝᴷ。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">QMR：链路综合权值矩阵 + 动态 K 最短路径</div>
+        <div class="detail-section-content">
+          QMR 算法核心思路：根据业务 QoS 敏感度动态计算<strong>链路综合权值矩阵</strong>，在矩阵上跑 K 最短路径，每生成一条路径后立即按"预期影响量"更新链路状态矩阵，让后续搜索避开已被占用 / 已拥塞的链路。
+          <br><br>
+          <strong>输入：</strong>网络拓扑 G(V, E)；M 对源-目的节点集合，每对对应一种业务类型 t_m；网络状态原始矩阵：D（链路时延矩阵）、B（已用带宽矩阵）、L（丢包率矩阵），均为 |V| × |V| 维；阈值 d_max（最高时延）、b_min（最低带宽）、l_max（最高丢包率）；K（每对最大候选路径数）。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin:16px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88rem;line-height:1.7;color:#e0e0e0;">
+<strong style="font-family:inherit;color:var(--accent);">链路综合权值矩阵 W (业务 t_m 视角):</strong><br>
+&nbsp;&nbsp;W<sub>ij</sub> = α<sub>t</sub> · D̂<sub>ij</sub> + β<sub>t</sub> · (1 − B̂<sub>ij</sub>) + γ<sub>t</sub> · L̂<sub>ij</sub><br>
+其中 (α<sub>t</sub>, β<sub>t</sub>, γ<sub>t</sub>) 是业务 t 的 QoS 敏感度三元组，满足 α<sub>t</sub> + β<sub>t</sub> + γ<sub>t</sub> = 1；<br>
+D̂、B̂、L̂ 是对 D、B、L 三个原始矩阵做 min-max 归一化后的结果。
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">主流程 (按业务优先级降序处理):</strong><br>
+1. 按业务流优先级指数 priority(t<sub>m</sub>) 降序排序所有源-目的节点对；<br>
+2. 对每对 (s<sub>m</sub>, d<sub>m</sub>):<br>
+&nbsp;&nbsp;&nbsp;a. 用 (α<sub>t</sub>, β<sub>t</sub>, γ<sub>t</sub>) 与当前 D, B, L 计算 W；<br>
+&nbsp;&nbsp;&nbsp;b. 在 W 上跑 K 最短路径，取下一条 P<sub>m</sub><sup>(k)</sup>；<br>
+&nbsp;&nbsp;&nbsp;c. 按业务的<strong>预期影响量</strong> (Δd, Δb, Δl) 更新链路状态:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;D<sub>ij</sub> ← D<sub>ij</sub> + Δd, B<sub>ij</sub> ← B<sub>ij</sub> + Δb, L<sub>ij</sub> ← L<sub>ij</sub> + Δl；<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;若 D<sub>ij</sub> > d<sub>max</sub> 或 B<sub>ij</sub> < b<sub>min</sub> 或 L<sub>ij</sub> > l<sub>max</sub>，<strong>屏蔽该链路</strong>（W<sub>ij</sub> ← ∞）；<br>
+&nbsp;&nbsp;&nbsp;d. 重复 a–c 直到为该对找到 K 条候选路径或链路状态不再可用；<br>
+3. 返回所有源-目的节点对的候选路径集 𝒫 = {P<sub>m</sub><sup>(1)</sup>, …, P<sub>m</sub><sup>(K)</sup>}<sub>m=1..M</sub>。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">QMR：业务分类与 QoS 敏感度三元组</div>
+        <div class="detail-section-content">
+          论文把业务划分为三类，赋予不同的 (α, β, γ) 敏感度三元组，分别对时延、带宽、丢包率有不同侧重：
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">业务类型</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">典型场景</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">(α, β, γ)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:10px 14px;">实时业务</td><td style="padding:10px 14px;">视频会议、远程医疗、关键控制</td><td style="padding:10px 14px;font-family:ui-monospace,monospace;color:#fff;">(0.7, 0.2, 0.1)</td></tr>
+              <tr><td style="padding:10px 14px;border-top:1px solid var(--border);">高可靠业务</td><td style="padding:10px 14px;border-top:1px solid var(--border);">文件传输、卫星遥感、灾备</td><td style="padding:10px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;">(0.3, 0.3, 0.4)</td></tr>
+              <tr><td style="padding:10px 14px;border-top:1px solid var(--border);">弹性业务</td><td style="padding:10px 14px;border-top:1px solid var(--border);">背景同步、非关键任务</td><td style="padding:10px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;">(0.2, 0.5, 0.3)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="detail-section-content">
+          这种"多维 QoS 综合考虑"的设计弥补了传统路径规划只关注单一优化目标（如最短跳数 / 最小代价）的局限性；优先级排序机制保证关键任务优先获得低延时路径；动态状态更新避免了多业务在 K 条路径生成过程中的资源争抢。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">DDPG：MDP 建模（状态 / 动作 / 奖励）</div>
+        <div class="detail-section-content">
+          QMR 给出候选路径集 𝒫 之后，把后续的"流量比例分配"建模为马尔可夫决策过程 (MDP)，由四元组 ⟨S, A, P, R⟩ 描述：
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin:16px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88rem;line-height:1.75;color:#e0e0e0;">
+<strong style="font-family:inherit;color:var(--accent);">状态 S:</strong> 当前网络状态信息矩阵 + QMR 路径集。<br>
+&nbsp;&nbsp;每条定向链路 e<sub>ij</sub> ∈ E 携带三元组属性 (τ<sub>ij</sub>, ψ<sub>ij</sub>, ρ<sub>ij</sub>) = (时延, 吞吐量, 丢包率)；<br>
+&nbsp;&nbsp;整合得到网络状态矩阵 N<sub>state</sub> ∈ ℝ<sup>|E|×3</sup>；<br>
+&nbsp;&nbsp;状态向量 s<sub>t</sub> = (N<sub>state</sub>, 𝒫)。
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">动作 A:</strong> 对每对 (s<sub>m</sub>, d<sub>m</sub>) 的 K 条候选路径分配归一化流量比例。<br>
+&nbsp;&nbsp;ω<sub>m</sub> = (ω<sub>m,1</sub>, …, ω<sub>m,K</sub>), Σ<sub>k=1..K</sub> ω<sub>m,k</sub> = 1, ω<sub>m,k</sub> ≥ 0；<br>
+&nbsp;&nbsp;a<sub>t</sub> = (ω<sub>1</sub>, ω<sub>2</sub>, …, ω<sub>M</sub>) ∈ ℝ<sup>M·K</sup>。
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">奖励 R:</strong> 在时间窗 (t, t+Δt] 上观测路径级 QoS：<br>
+&nbsp;&nbsp;τ<sub>m,k</sub>: 路径 P<sub>m</sub><sup>(k)</sup> 平均端到端时延；<br>
+&nbsp;&nbsp;ψ<sub>m,k</sub>: 路径平均端到端吞吐量；<br>
+&nbsp;&nbsp;ρ<sub>m,k</sub>: 路径平均端到端丢包率。<br>
+&nbsp;&nbsp;路径级效用函数:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;U<sub>m,k</sub> = − α · τ<sub>m,k</sub> + β · ψ<sub>m,k</sub> − γ · ρ<sub>m,k</sub>, &nbsp;(α, β, γ &gt; 0)<br>
+&nbsp;&nbsp;总奖励 (按流量比例加权所有源-目的对的所有路径):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;R(s<sub>t</sub>, a<sub>t</sub>) = Σ<sub>m=1..M</sub> Σ<sub>k=1..K</sub> ω<sub>m,k</sub> · U<sub>m,k</sub>
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">价值函数与 Bellman 方程:</strong><br>
+&nbsp;&nbsp;V<sup>π</sup>(s) = 𝔼<sub>π</sub>[ Σ<sub>i=0..∞</sub> γ<sup>i</sup> · R(s<sub>t+i</sub>, a<sub>t+i</sub>) | s<sub>t</sub> = s ]<br>
+&nbsp;&nbsp;Q*(s, a) = R(s, a) + γ · 𝔼<sub>s'</sub>[ max<sub>a'</sub> Q*(s', a') ]
+<br><br>
+状态空间与动作空间均为<strong>连续空间</strong>，故采用 DDPG 求解。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">DDPG：Actor-Critic 与训练机制</div>
+        <div class="detail-section-content">
+          DDPG 由四个网络组成：在线 Actor μ(s | θ<sup>μ</sup>)、在线 Critic Q(s, a | θ<sup>Q</sup>)、目标 Actor μ'(s | θ<sup>μ'</sup>)、目标 Critic Q'(s, a | θ<sup>Q'</sup>)。Actor 网络输出动作（路径分流权值），Critic 网络评估"状态-动作"对的累积回报。训练阶段对动作注入 Ornstein-Uhlenbeck 噪声维持探索：
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin:16px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88rem;line-height:1.75;color:#e0e0e0;">
+<strong style="font-family:inherit;color:var(--accent);">动作生成 (训练):</strong>&nbsp;&nbsp; a<sub>t</sub> = μ(s<sub>t</sub> | θ<sup>μ</sup>) + 𝒩<sub>OU</sub>(t)
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">Critic 时间差分目标:</strong><br>
+&nbsp;&nbsp; y<sub>t</sub> = R(s<sub>t</sub>, a<sub>t</sub>) + γ · Q'(s<sub>t+1</sub>, μ'(s<sub>t+1</sub> | θ<sup>μ'</sup>) | θ<sup>Q'</sup>)
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">Critic 损失 (MSE):</strong><br>
+&nbsp;&nbsp; L(θ<sup>Q</sup>) = 𝔼<sub>(s,a,r,s') ∼ ℬ</sub> [ ( Q(s, a | θ<sup>Q</sup>) − y<sub>t</sub> )<sup>2</sup> ]
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">Actor 策略梯度 (DPG 定理):</strong><br>
+&nbsp;&nbsp; ∇<sub>θ<sup>μ</sup></sub> J ≈ 𝔼<sub>s ∼ ℬ</sub> [ ∇<sub>a</sub> Q(s, a | θ<sup>Q</sup>) |<sub>a=μ(s)</sub> · ∇<sub>θ<sup>μ</sup></sub> μ(s | θ<sup>μ</sup>) ]
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">目标网络软更新:</strong><br>
+&nbsp;&nbsp; θ<sup>Q'</sup> ← τ · θ<sup>Q</sup> + (1 − τ) · θ<sup>Q'</sup><br>
+&nbsp;&nbsp; θ<sup>μ'</sup> ← τ · θ<sup>μ</sup> + (1 − τ) · θ<sup>μ'</sup>, &nbsp;τ ≈ 0.001
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">经验回放:</strong> 把每次交互产生的 (s<sub>t</sub>, a<sub>t</sub>, r<sub>t</sub>, s<sub>t+1</sub>, done) 存入 Replay Buffer ℬ；训练时从 ℬ 中随机采样小批量打破时序相关性，可叠加优先级采样加速高价值样本学习。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Actor / Critic 神经网络架构（图嵌入 + 消息传递）</div>
+        <div class="detail-section-content">
+          为同时编码"网络拓扑"和"路径集"两种结构化信息，Actor 与 Critic 网络都采用<strong>图嵌入 + 多轮消息传递</strong>的架构（区别于 DDPG 经典的纯 MLP 实现）：
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin:16px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88rem;line-height:1.75;color:#e0e0e0;">
+<strong style="font-family:inherit;color:var(--accent);">嵌入阶段:</strong><br>
+&nbsp;&nbsp; 边 e: h<sub>e</sub><sup>(0)</sup> = MLP<sub>edge</sub>(τ<sub>e</sub>, ψ<sub>e</sub>, ρ<sub>e</sub>)<br>
+&nbsp;&nbsp; 路径 p: h<sub>p</sub><sup>(0)</sup> = MLP<sub>path</sub>( 路径 p 的边索引序列 )
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">L 轮消息传递 (路径 ↔ 边双向):</strong><br>
+&nbsp;&nbsp; <em>Path 收消息:</em> &nbsp; m<sub>p</sub><sup>(l)</sup> = Σ<sub>e ∈ p</sub> f<sub>p-msg</sub>(h<sub>p</sub><sup>(l)</sup>, h<sub>e</sub><sup>(l)</sup>)<br>
+&nbsp;&nbsp; <em>Edge 收消息:</em> &nbsp; m<sub>e</sub><sup>(l)</sup> = Σ<sub>p ∋ e</sub> f<sub>e-msg</sub>(h<sub>e</sub><sup>(l)</sup>, h<sub>p</sub><sup>(l)</sup>)<br>
+&nbsp;&nbsp; <em>更新:</em><br>
+&nbsp;&nbsp; &nbsp;&nbsp; h<sub>p</sub><sup>(l+1)</sup> = MLP<sub>p-upd</sub>( concat(h<sub>p</sub><sup>(l)</sup>, m<sub>p</sub><sup>(l)</sup>) )<br>
+&nbsp;&nbsp; &nbsp;&nbsp; h<sub>e</sub><sup>(l+1)</sup> = MLP<sub>e-upd</sub>( concat(h<sub>e</sub><sup>(l)</sup>, m<sub>e</sub><sup>(l)</sup>) )
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">Actor 读出 (生成动作):</strong><br>
+&nbsp;&nbsp; 路径打分: score<sub>m,k</sub> = MLP<sub>readout</sub>( h<sub>p<sub>m,k</sub></sub><sup>(L)</sup> )<br>
+&nbsp;&nbsp; <strong>同一对 (s<sub>m</sub>, d<sub>m</sub>) 内做 Softmax 归一化:</strong><br>
+&nbsp;&nbsp; &nbsp;&nbsp; ω<sub>m,k</sub> = exp(score<sub>m,k</sub>) / Σ<sub>j=1..K</sub> exp(score<sub>m,j</sub>)<br>
+&nbsp;&nbsp; 自动满足 Σ<sub>k</sub> ω<sub>m,k</sub> = 1, ω<sub>m,k</sub> ≥ 0 的归一化与非负约束。
+<br><br>
+<strong style="font-family:inherit;color:var(--accent);">Critic 读出 (评估 Q 值):</strong><br>
+&nbsp;&nbsp; Critic 在嵌入阶段把 Actor 输出的 ω<sub>m,k</sub> 通过线性嵌入与路径隐藏向量融合；<br>
+&nbsp;&nbsp; 局部 Q 值: q<sub>m,k</sub> = MLP<sub>readout-Q</sub>( h<sub>p<sub>m,k</sub></sub><sup>(L)</sup> )<br>
+&nbsp;&nbsp; 全局 Q 值 (按动作权重聚合): Q(s, a) = Σ<sub>m,k</sub> ω<sub>m,k</sub> · q<sub>m,k</sub>
+        </div>
+        <div class="detail-section-content">
+          这种 Actor / Critic 设计相比"扁平 MLP" 的优势：① 用消息传递天然处理"路径 — 链路"的多对多关系，既编码全局拓扑也编码每条路径的具体走向；② 通过 Softmax 直接产出归一化流量比例，无需手工后处理；③ 边特征会因路径侧的反馈被更新，使路径集的占用关系反映到链路状态嵌入中。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">仿真环境、超参数与对比结果</div>
+        <div class="detail-section-content">
+          <strong>仿真平台：</strong>STK 11 生成 Walker 星座轨迹（5 GEO + 15 轨道 × 15 颗 = 225 LEO）；OPNET 14.5 实现基于 SDN 的卫星协议栈；构建 Python 3.10 ↔ OPNET 14.5 的通信桥，让 Python 端跑 DDPG 神经网络，把动作回传给 OPNET 执行。设计了"不平衡业务场景"——故意让某些链路在单径路由下严重拥塞，凸显多径与智能分流的优势。<br><br>
+          <strong>对比算法：</strong>① SPF（Shortest Path First）单径最短路径；② ECMP（Equal-Cost MultiPath）等权重多径分流；③ QMR + DDPG（本文方案）。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">超参数</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">取值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:8px 14px;">折扣因子 γ</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">0.99</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">Actor 学习率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-4</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">Critic 学习率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-3</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">目标网络软更新 τ</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-3</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">小批量 batch size</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">64</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">隐藏特征维度</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">128</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">消息传递迭代 L</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">8</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">OU 噪声 (μ, θ, σ)</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">(0, 0.15, 0.2)</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">实验硬件</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">AMD Ryzen 7745h 3.6GHz + RTX 4060</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="detail-section-content">
+          <strong>性能结果（业务流 1 Gb/s，仿真窗口 60 s）：</strong>
+          <ul style="margin:8px 0 8px 24px;color:#e0e0e0;line-height:1.8;">
+            <li><strong>平均端到端时延</strong>：QMR + DDPG 相比 ECMP <strong>降低 ~15%</strong>；SPF 因单径拥塞最差。</li>
+            <li><strong>平均吞吐量</strong>：多径方案（ECMP 与 QMR + DDPG）相比 SPF <strong>提升 ~2%</strong>，QMR + DDPG 与 ECMP 在该指标上接近（均充分利用了多径带宽）。</li>
+            <li><strong>平均丢包率</strong>：QMR + DDPG 相比 ECMP <strong>降低 ~12%</strong>，SPF 因单链路过载丢包率显著最高。</li>
+            <li><strong>弹性场景</strong>：考虑链路损毁与失能概率后，时延 / 吞吐 / 丢包三个指标 QMR + DDPG 相比 ECMP 都获得约 <strong>5% 的额外增益</strong>，证明算法在动态故障下的鲁棒性。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-6">
+      <h2 class="detail-layer-title">系统验证与产出</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">协议功能与端到端测试</div>
+        <div class="detail-section-content">
+          MAC 模块功能测试：信息广播帧低轨卫星查询自身位置、向 GEO 发起 Hello 接入 / GEO 更新拓扑表后广播；CreateLink 帧低轨卫星按拓扑表调整天线、向邻居发 Hello 测试链路；TransData 帧按业务优先级排序入队、按时隙调度发送；ACK 超时触发路由重构。算法功能测试：Python 智能体通过 OPNET 外部接口下发 QMR 多径权重，DDPG 训练时通过 reward 反馈实时调整权重，最终路由表正常生成「目的 / 下一跳 / 跳数 / 生存周期」四列。
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <img src="./img/thz_multipath_routing.png" alt="多径路由示意图" style="max-width:65%;height:auto;border-radius:8px;background:#fff;padding:12px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">QMR 多径示例：从节点 2 到节点 34 生成两条不重合候选路径，由 DDPG 决定流量比例</p>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">网络性能：时延 / 负载 / 吞吐 / 丢包</div>
+        <div class="detail-section-content">
+          OPNET 协议层基础性能（不开启智能算法）：1 分钟仿真窗口下稳态端到端时延 0.01–0.02 s，网络负载稳定 50 Gbps，丢包率 < 3%；峰值出现在信息广播帧与链路建立帧期间（此时不传业务）。<br><br>
+          QMR + DDPG 算法层性能：相比 ECMP 等价多路径路由，端到端时延降低 <strong>15%</strong>；在考虑链路损毁与失能的弹性动态场景下，端到端时延、网络吞吐、丢包率均获约 <strong>5%</strong> 额外增益，体现算法在"全局视野 + 实时适应"双维度的综合优势。
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">量化效果</div>
+        <div class="detail-effects">
+          <div class="effect-card">
+            <div class="num">-15%</div>
+            <div class="label">QMR + DDPG 相比 ECMP 时延下降</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">+5%</div>
+            <div class="label">弹性场景下时延 / 吞吐 / 丢包增益</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">220 GHz</div>
+            <div class="label">太赫兹工作频段</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">230</div>
+            <div class="label">仿真节点（225 LEO + 5 GEO）</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">0.01-0.02s</div>
+            <div class="label">协议层稳态端到端时延</div>
+          </div>
+          <div class="effect-card">
+            <div class="num">50 Gbps</div>
+            <div class="label">稳态网络负载</div>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">个人职责</div>
+        <div class="detail-section-content">
+          负责整个项目的核心研发工作：① 太赫兹链路 MATLAB 物理仿真——四分量损耗模型实现、高斯主波束建模、卫星摄动对 OPNET 管道扰动函数的拟合；② OPNET 协议级仿真——节点协议栈搭建（用户 / GEO / LEO / 地面站 4 类节点）、TDMA 超帧实现、星地与星间 MAC 状态机编码；③ 路由算法研究与论文撰写——QMR 多径路径生成 + 改进 DDPG 流量分配的算法设计、Python + PyTorch 实现 Actor-Critic 网络、与 ECMP / MCMP 等基线对比仿真、独立完成论文《结合 QoS 感知与深度强化学习的低轨卫星网络多径路由算法》撰写；④ 衍生发明专利方案撰写——把 QMR + DDPG 思路扩展为 LEO-MEO 分簇 + GNN-GRU + QMIX 多智能体协同的工程化方案。
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">学术输出</div>
+        <div class="detail-section-content">
+          <strong>论文：</strong>《结合 QoS 感知与深度强化学习的低轨卫星网络多径路由算法》（草稿 2025-02-17，提交中）。提出 QMR 多径生成 + 改进 DDPG 实时流量分配的两段式算法，相比 ECMP 时延降低 15%。<br><br>
+          <strong>发明专利（正在发表）：</strong>《一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法》。把 QMR + DDPG 的思路在工程上扩展到 LEO-MEO 双层星座 + 分布式 SDN 控制器（MEO 作簇首），结合 GNN-GRU 拓扑特征提取与 QMIX 多智能体协同决策，应对更大规模与多控制器协同场景。<a href="../publications/patent-satellite-qos.html" style="color:var(--accent);font-weight:500;">→ 查看专利详情</a>
+        </div>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">太赫兹 (220 GHz)</span><span class="tag">ITU-R P.618</span><span class="tag">高斯主波束</span><span class="tag">MATLAB</span><span class="tag">OPNET</span><span class="tag">Python</span><span class="tag">PyTorch</span><span class="tag">SDN</span><span class="tag">Walker 星座</span><span class="tag">TDMA 4 状态超帧</span><span class="tag">星地接入协议</span><span class="tag">星间 MAC</span><span class="tag">Hello / ACK 路由重构</span><span class="tag">QMR 多径</span><span class="tag">改进 DDPG</span><span class="tag">Actor-Critic</span><span class="tag">连续动作空间</span><span class="tag">Experience Replay</span><span class="tag">ECMP / MCMP 对比</span><span class="tag">多业务 QoS</span><span class="tag">on-off 业务模型</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun · Built from scratch</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

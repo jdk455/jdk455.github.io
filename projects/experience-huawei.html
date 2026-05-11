@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>华为无线预研部门 · 6G 能力开放部 实习 — 蔡嘉骏</title>
+<meta name="description" content="华为无线预研部门 6G 能力开放部（3GPP SA2 方向）实习详情：6G 通感一体化网络架构与能力开放预研。">
+<link rel="canonical" href="https://jdkjdkjdk.top/projects/experience-huawei.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#experience">实习</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#experience" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">华为无线预研部门 · 6G 能力开放部（3GPP SA2 方向）· 2025.09 – 2026.03</div>
+    <h1 class="detail-title serif">6G 通感一体化网络架构（3GPP SA2 方向）</h1>
+    <p class="detail-desc reveal">
+      在华为无线预研部门 · 6G 能力开放部（3GPP SA2 方向）实习 7 个月，参与 6G 通感一体化（ISAC, Integrated Sensing and Communication）网络架构与数据处理机制的预研工作。研究内容围绕通感模型的更新触发、生命周期管理与底层流批一体数据处理两个层面，对应 3GPP SA2 在 6G 阶段对系统与网络架构的标准化研究范畴。期间形成两个研究点。
+    </p>
+
+    <!-- 部门背景 -->
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">实习背景</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">部门背景</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>3GPP SA2：</strong>3GPP 是全球移动通信标准化组织，SA2（Service & System Aspects Working Group 2）是其下负责系统与网络架构的核心工作组，4G EPC、5G SBA（Service-Based Architecture）以及 6G 架构的顶层设计均由 SA2 主导，产出包含 TS 23.501 / 23.502 / 23.288 等。</div>
+          <div class="detail-arch-item"><strong>对接的标准化议题：</strong>6G 通感一体化（ISAC）的网络架构，包含感知功能在网络中的位置、新增网元、感知数据流的封装与路由；6G 网络能力开放，延续 5G 的 NEF / CAPIF 框架，研究如何将 6G 新增的感知 / AI / 计算能力以标准化 API 暴露给第三方应用。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">研究方向</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">研究方向一：通感模型更新流程与生命周期管理</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>问题：</strong>在 6G 通感一体化网络中，感知模型部署在不同区域、面向不同感知源（基站、路侧单元、车载终端等）、服务不同业务场景，使用一段时间后可能出现性能漂移。如何让网络具备对感知模型从训练、上线、运行到下线的全生命周期管理能力，是能力开放层的基础问题。</div>
+
+          <div class="detail-arch-item"><strong>研究内容：</strong>研究 6G 网络中感知模型从训练、上线、影子验证、A/B 测试到灰度替换的生命周期管理机制，明确每个阶段的数据采集、判定指标与切换策略，使新旧模型可在不影响线上业务的前提下平滑过渡。</div>
+
+          <div class="detail-arch-item"><strong>关键指标：</strong>设计模型质量监控与更新触发流程，使网络能够基于感知置信度、定位误差、跨源一致性、时延等指标判断模型是否需要重训练、热更新或回滚，将模型的更新动作与可观测信号显式绑定。</div>
+
+          <div class="detail-arch-item"><strong>研究价值：</strong>把感知模型从"一次性部署"提升为"可持续迭代"的网络能力组件，使 6G 网络在异质场景与长期运行中保持感知精度与稳定性。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">研究方向二：6G 感知数据处理流批一体架构</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>问题：</strong>6G 通感数据同时承担实时业务与离线业务两类需求。实时业务要求亚秒级响应做质量监控、异常检测与告警触发；离线业务需要历史回溯与批量计算用于模型评估和训练样本构建。如何在一套架构内同时支持两类需求，是数据处理层的核心问题。</div>
+
+          <div class="detail-arch-item"><strong>研究内容：</strong>研究流批一体架构在通感数据采集、质量监控、历史回溯与模型训练中的应用，基于 Kafka / KRaft、Flink、Apache Iceberg / Delta Lake 等现代数据基础设施进行架构设计。</div>
+
+          <div class="detail-arch-item"><strong>双路径协同：</strong>实时业务通过流式增量数据完成快速质量监控、异常检测和告警触发；离线业务基于数据湖快照完成历史分析、模型评估与训练样本构建。两条路径共享同一套底层存储与数据语义。</div>
+
+          <div class="detail-arch-item"><strong>工程实践：</strong>系统学习并实践 Kafka、KRaft、Flink、Iceberg、Delta Lake 等流批一体关键技术，并在公司内部开源了 KRaft 协议的 Wireshark 分析插件，便于团队进行 KRaft 协议消息的可视化抓包与定位。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">两个研究方向的衔接</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>方向一（生命周期管理）：</strong>解决感知模型自身如何持续更新与迭代，关注模型在网络侧的运行质量与版本演进。</div>
+          <div class="detail-arch-item"><strong>方向二（数据处理架构）：</strong>解决支撑模型监控、回滚判定与训练样本构建所需的实时数据与历史数据如何在同一套架构内沉淀与复用。</div>
+          <div class="detail-arch-item"><strong>整体：</strong>两个方向构成"上层模型迭代、底层数据沉淀"的协同闭环，分别对应 6G 通感网络在算法侧与数据侧的关键支撑。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">个人产出</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">个人收获</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>对 3GPP SA2 标准化体系的认知：</strong>从 4G EPC、5G SBA 到 6G ISAC 与 AI 原生网络的演进脉络，理解了一项工业能力如何在标准化语境中被定义、抽象、规范。</div>
+          <div class="detail-arch-item"><strong>对 6G 通感一体化架构的认知：</strong>建立了 ISAC 网络架构、感知数据流、能力开放接口三个层面的系统知识储备。</div>
+          <div class="detail-arch-item"><strong>对 AI 模型生命周期管理的认知：</strong>理解感知模型在网络侧从训练、上线、影子验证、A/B 测试到灰度替换的完整管理路径，以及基于感知置信度、定位误差、跨源一致性、时延等指标的更新触发机制。</div>
+          <div class="detail-arch-item"><strong>对工业级研发链路的认知：</strong>第一次完整经历"工业场景痛点 → 学术问题抽象 → 方案撰写 → 内审答辩"的研发链路，理解了研究如何反哺产业。</div>
+          <div class="detail-arch-item"><strong>对流式与批处理工程栈的认知：</strong>系统学习并实践了 Kafka、KRaft、Flink、Iceberg、Delta Lake 等流批一体方向的现代数据基础设施。</div>
+        </div>
+      </div>
+    </section>
+
+  
+
+    
+
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

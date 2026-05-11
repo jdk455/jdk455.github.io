@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一种意图驱动的网络配置模板生成方法 — 蔡嘉骏</title>
+<meta name="description" content="发明专利：一种意图驱动的网络配置模板生成方法，面向 5G 核心网的知识增强型配置生成。">
+<link rel="canonical" href="https://jdkjdkjdk.top/publications/patent-5g-intent.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#publications" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">📝 发明专利 · 已授权</div>
+    <h1 class="detail-title serif">一种意图驱动的网络配置模板生成方法</h1>
+    <p class="detail-desc reveal">
+      面向 5G 核心网的知识增强型意图驱动配置生成方法。本专利与 ICCT 2025 EI 会议论文同源，是论文方法的工程化技术保护，通过<strong>知识图谱构建 + BERT 语义编码 + GraphSAGE 图推理</strong>三段式架构，实现了从自然语言运维意图到具体配置命令模板的自动生成。已应用于华为 5G 核心网产品线，对 5GC ToB 场景的运维效率有显著提升。
+    </p>
+
+    <div class="detail-section reveal" style="text-align:center;">
+      <a href="https://xueshu.baidu.com/ndscholar/browse/detail?paperid=1n5v0a20e91j0650tu3y0vm0pp220057" target="_blank" rel="noopener" style="display:inline-block;padding:14px 28px;background:var(--accent);color:var(--bg);border-radius:100px;font-weight:600;font-size:.95rem;text-decoration:none;transition:all .2s;">
+        在百度学术查看专利全文 →
+      </a>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">专利信息</div>
+      <div class="detail-section-content">
+        <strong>专利名称：</strong>一种意图驱动的网络配置模板生成方法<br>
+        <strong>状态：</strong>已授权<br>
+        <strong>领域：</strong>5G 通信 / 智能运维 / 知识图谱 / 自然语言处理<br>
+        <strong>合作机构：</strong>北京邮电大学 × 华为<br>
+        <strong>关联论文：</strong><a href="icct-2025-5g-intent.html">Knowledge-Enabled Intent-Driven Network Configuration Generation for 5G Core Networks（ICCT 2025）</a><br>
+        <strong>百度学术链接：</strong><a href="https://xueshu.baidu.com/ndscholar/browse/detail?paperid=1n5v0a20e91j0650tu3y0vm0pp220057" target="_blank" rel="noopener">paperid=1n5v0a20e91j0650tu3y0vm0pp220057</a>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术问题</div>
+      <div class="detail-section-content">
+        当前 5G 核心网配置依赖人工记忆 5,000+ 条复杂命令，存在三个核心痛点：<br><br>
+        <strong>① 模板/状态机方法表达能力不足：</strong>静态模板无法覆盖业务变体，状态机难以维护；<br>
+        <strong>② 跨场景泛化能力差：</strong>新场景需重新设计规则，迁移成本高；<br>
+        <strong>③ 命令参数复杂依赖：</strong>SMF / UPF / DCGW / FW 等多元素配置存在隐式参数引用，传统规则难以表达。
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术方案（核心权利要求）</div>
+      <div class="detail-arch">
+        <div class="detail-arch-item"><strong>步骤 1：知识图谱构建</strong><br>从 5,333 条设备手册命令中自动抽取命令完整名、缩写、功能、参数。通过 BERT + RoBERTa 同义词替换增强文本，采用<strong>聚类损失（KL 散度）+ 对比学习损失</strong>的联合优化，对命令进行功能聚类。提取两类关系：① 命令类别关系；② 参数引用关系。最终构建包含命令节点、参数节点、引用边的 Neo4j 知识图谱。</div>
+
+        <div class="detail-arch-item"><strong>步骤 2：意图与命令的语义编码</strong><br>使用微调 BERT-large 对意图描述与命令描述进行语义编码，生成 1024 维嵌入向量，再降至 300 维。对命令-意图知识图谱采用 GraphSAGE（两层、300 维节点嵌入）进行多跳卷积，融合拓扑结构与语义信息。</div>
+
+        <div class="detail-arch-item"><strong>步骤 3：对比学习训练</strong><br>采用 InfoNCE 损失函数进行端到端优化，最大化正例意图-命令对的相似度。针对正例稀缺场景设计负采样策略：从剩余命令中按采样概率挑选负例。</div>
+
+        <div class="detail-arch-item"><strong>步骤 4：意图驱动的命令推断</strong><br>用户输入自然语言意图 → BERT 编码为语义向量 → GraphSAGE 增强的命令嵌入 → 余弦相似度计算 → 阈值过滤 → 输出最终命令集合。整体推理延迟 ~200ms。</div>
+
+        <div class="detail-arch-item"><strong>步骤 5：模板生成与下发</strong><br>根据推断出的命令集合，按照参数引用关系自动确定执行顺序，生成可执行的配置模板，下发到对应网元执行。</div>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">系统架构图</div>
+      <div class="detail-section-content" style="text-align: center; margin: 20px 0;">
+        <img src="../projects/img/5g_intent_arch_fig3.png" alt="专利系统架构图" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <p style="font-size: 14px; color: var(--text3); margin-top: 10px;">专利系统架构：知识图谱构建 + 意图驱动推理两段式</p>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">实验验证</div>
+      <div class="detail-section-content">
+        在华为 5GC 设备手册的 5,333 条命令上完成端到端验证。<br><br>
+        <strong>聚类纯度：</strong>UPF VPN & LB 场景达 0.938；<br>
+        <strong>意图推理：</strong>Accuracy 99.88%，Recall 88.97%；<br>
+        <strong>已部署：</strong>华为 5G 核心网产品线，4 个 5GC ToB 真实场景验证通过。
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术效果</div>
+      <div class="detail-section-content">
+        <strong>第一</strong>、解决了传统模板法和状态机法在 5G 核心网配置中表达不灵活、规则难维护的问题；<br><br>
+        <strong>第二</strong>、通过知识图谱与图推理的结合，使配置生成具备<strong>跨场景泛化能力</strong>，新增业务场景无需重新设计规则；<br><br>
+        <strong>第三</strong>、自然语言意图驱动的交互方式显著降低了运维门槛，使非专家用户也能完成复杂配置；<br><br>
+        <strong>第四</strong>、对比 baseline 模板法，意图推理 Recall 提升 ~40 pp，可显著减少配置错误率。
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">关联资源</div>
+      <div class="detail-section-content">
+        <strong>关联项目：</strong><a href="../projects/5g-intent.html">面向 5G 核心网的意图驱动指令配置系统</a><br>
+        <strong>关联论文：</strong><a href="icct-2025-5g-intent.html">Knowledge-Enabled Intent-Driven Network Configuration Generation for 5G Core Networks</a>（ICCT 2025 EI）
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <div class="detail-section-title">技术栈</div>
+      <div class="detail-tags">
+        <span class="tag">Neo4j</span><span class="tag">BERT</span><span class="tag">GraphSAGE</span><span class="tag">PyTorch</span><span class="tag">InfoNCE</span><span class="tag">知识图谱</span><span class="tag">5G 核心网</span><span class="tag">意图驱动</span><span class="tag">智能运维</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
