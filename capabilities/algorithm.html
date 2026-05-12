@@ -32,7 +32,7 @@
     <div class="detail-badge">能力详情 · 关于我 · 视角 03</div>
     <h1 class="detail-title serif">从算法视角：GNN 与强化学习</h1>
     <p class="detail-desc reveal">
-      在我接触过的工程问题中，<strong>图神经网络（GNN）</strong>与<strong>强化学习（RL）</strong>是两种最具"系统观"的算法范式 —— GNN 关心"结构如何编码"，RL 关心"决策如何优化"。前者把<a href="../projects/5g-intent.html">5G 核心网配置命令</a>、<a href="../projects/satellite-qos.html">卫星拓扑</a>、<a href="../projects/maxbft.html">区块链节点关系</a>这类非欧几里得对象嵌入向量空间；后者把"做什么动作能让长期收益最大"形式化为可优化的目标。本页系统梳理这两条线 —— 第一章对比 GNN 与 RL 的本质差异；第二章从贝尔曼方程出发把 RL 的两条公理性分类轴「价值/策略」「在线/离线」与多智能体 MARL 讲清楚；<strong>第三章把 RL 工具链延伸到 LLM 时代</strong>（RLHF / DPO / GRPO）以及更前沿的 <strong>Agentic-RL</strong>，这一章我没有项目实战、但正在持续跟进，是我下一步的研究方向；第四章回到我已实战过的「GNN + RL 协同」研究主线（卫星路由专利）。
+      在我接触过的工程问题中，<strong>图神经网络（GNN）</strong>与<strong>强化学习（RL）</strong>是两种最具"系统观"的算法范式 —— GNN 关心"结构如何编码"，RL 关心"决策如何优化"。前者把<a href="../projects/5g-intent.html">5G 核心网配置命令</a>、<a href="../projects/satellite-qos.html">卫星拓扑</a>、<a href="../projects/maxbft.html">区块链节点关系</a>这类非欧几里得对象嵌入向量空间；后者把"做什么动作能让长期收益最大"形式化为可优化的目标。本页系统梳理这两条线 —— 第一章对比 GNN 与 RL 的本质差异；第二章从贝尔曼方程出发把 RL 的两条公理性分类轴「价值/策略」「在线/离线」与多智能体 MARL 讲清楚；<strong>第三章把 RL 工具链延伸到 LLM 时代</strong>（RLHF / DPO / GRPO）以及更前沿的 <strong>Agentic-RL</strong>，这一章我正在持续跟进，是我下一步的研究方向；第四章回到我已实战过的「GNN + RL 协同」研究主线（卫星路由专利）。
     </p>
 
     <!-- ===================== Capability Mindmap ===================== -->
@@ -486,7 +486,7 @@
           <br/>② <strong>场景互补性</strong>：网络 RL 的状态是连续向量（链路质量矩阵 64×64），LLM RL 的状态是离散 token 序列（10w vocab × 数千长度）；前者训练我对"<strong>连续动作 + 多智能体协同</strong>"的理解，后者将训练我对"<strong>离散大动作空间 + 长轨迹 credit assignment</strong>"的理解。两类场景互补，能让我对 RL 工具链有更完整的把握；
           <br/>③ <strong>三视角真正闭环</strong>：Agentic-RL 是 <a href="../capabilities/agent.html">Agent 视角</a>（Planning + Tool-use）+ 算法视角（RL 优化）+ <a href="../capabilities/system.html">系统视角</a>（训练基础设施 + Service Mesh + 数据流水线）的天然交汇 —— 把 Agentic-RL 做明白，就是把我自我定位的三个视角真正联起来。
           <br/><br/>
-          这一章我没有项目实战可以"展示"，但已经把 TRL、OpenRLHF、veRL、verl-agent、AgentR1 等开源 RLHF / Agentic-RL 框架通读、跑过 demo。这是我硕士最后一年和工作头两年的<strong>核心研究方向</strong>。
+          研究 TRL、OpenRLHF、veRL、verl-agent、AgentR1 等开源 RLHF / Agentic-RL 框架。。
         </div>
       </div>
     </section>
