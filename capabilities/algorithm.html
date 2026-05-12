@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>能力详情 · 算法视角 — 蔡嘉骏</title>
+<meta name="description" content="算法能力详情：图神经网络（GNN）与强化学习（RL）的对比，从贝尔曼方程出发介绍 value/policy、on/off-policy、Actor-Critic、MARL；延伸到 LLM 时代的 RLHF / DPO / GRPO 与 Agentic-RL。">
+<link rel="canonical" href="https://jdkjdkjdk.top/capabilities/algorithm.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#experience">实习</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#about" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">能力详情 · 关于我 · 视角 03</div>
+    <h1 class="detail-title serif">从算法视角：GNN 与强化学习</h1>
+    <p class="detail-desc reveal">
+      在我接触过的工程问题中，<strong>图神经网络（GNN）</strong>与<strong>强化学习（RL）</strong>是两种最具"系统观"的算法范式 —— GNN 关心"结构如何编码"，RL 关心"决策如何优化"。前者把<a href="../projects/5g-intent.html">5G 核心网配置命令</a>、<a href="../projects/satellite-qos.html">卫星拓扑</a>、<a href="../projects/maxbft.html">区块链节点关系</a>这类非欧几里得对象嵌入向量空间；后者把"做什么动作能让长期收益最大"形式化为可优化的目标。本页系统梳理这两条线 —— 第一章对比 GNN 与 RL 的本质差异；第二章从贝尔曼方程出发把 RL 的两条公理性分类轴「价值/策略」「在线/离线」与多智能体 MARL 讲清楚；<strong>第三章把 RL 工具链延伸到 LLM 时代</strong>（RLHF / DPO / GRPO）以及更前沿的 <strong>Agentic-RL</strong>，这一章我没有项目实战、但正在持续跟进，是我下一步的研究方向；第四章回到我已实战过的「GNN + RL 协同」研究主线（卫星路由专利）。
+    </p>
+
+    <!-- ===================== Capability Mindmap ===================== -->
+    <div class="mindmap reveal">
+      <div class="mindmap-title">能力思维导图 · GNN（表示）+ RL（决策，含五大子范式）</div>
+      <div class="mindmap-wrap">
+        <svg viewBox="0 0 940 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="算法视角能力思维导图">
+          <!-- ===== 连接线 ===== -->
+          <g fill="none" stroke="#C9A96E" stroke-width="1.3" opacity="0.55">
+            <!-- 根节点 → 左右两支 -->
+            <path d="M 470 80 V 105"/>
+            <path d="M 190 105 H 750"/>
+            <path d="M 190 105 V 130"/>
+            <path d="M 750 105 V 130"/>
+            <!-- RL 分支 → 贝尔曼方程 -->
+            <path d="M 750 180 V 200"/>
+            <!-- 贝尔曼方程 → RL 子树主纵线 -->
+            <path d="M 750 240 V 260 H 430 V 245"/>
+            <!-- RL 子树主纵线（贯穿 5 个子分支） -->
+            <path d="M 430 260 V 638"/>
+            <!-- 横向支线到各子分支标题 -->
+            <path d="M 430 273 H 452"/>
+            <path d="M 430 367 H 452"/>
+            <path d="M 430 437 H 452"/>
+            <path d="M 430 503 H 452"/>
+            <path d="M 430 593 H 452"/>
+          </g>
+
+          <!-- ===== 根节点 ===== -->
+          <rect x="355" y="20" width="230" height="60" rx="12" fill="#C9A96E" opacity="0.92"/>
+          <text x="470" y="50" text-anchor="middle" fill="#0a0a0a" font-weight="700" font-size="17">算法视角</text>
+          <text x="470" y="69" text-anchor="middle" fill="#0a0a0a" font-size="11.5" opacity="0.75">GNN（表示）+ RL（决策）</text>
+
+          <!-- ===== 左：GNN 分支节点 ===== -->
+          <rect x="90" y="130" width="200" height="50" rx="12" fill="rgba(201,169,110,0.10)" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="190" y="156" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="14">图神经网络 GNN</text>
+          <text x="190" y="173" text-anchor="middle" fill="#a8a8a8" font-size="11">结构 → 嵌入</text>
+
+          <!-- GNN 子内容（左列紧凑） -->
+          <text x="80" y="212" fill="#C9A96E" font-size="12" font-weight="700">▼ 消息传递 (MPNN)</text>
+          <text x="80" y="234" fill="#a8a8a8" font-size="11.5">• GCN（transductive）</text>
+          <text x="80" y="254" fill="#a8a8a8" font-size="11.5">• GraphSAGE ★（inductive）</text>
+          <text x="80" y="274" fill="#a8a8a8" font-size="11.5">• GAT（attention）</text>
+          <text x="80" y="294" fill="#a8a8a8" font-size="11.5">• GIN（最强表达力）</text>
+          <text x="80" y="314" fill="#a8a8a8" font-size="11.5">• GraphSAINT（子图采样）</text>
+          <text x="80" y="334" fill="#a8a8a8" font-size="11.5">• GraphMAE（自监督预训练）</text>
+          <text x="80" y="354" fill="#a8a8a8" font-size="11.5">• GNN-GRU ★（时空联合）</text>
+
+          <text x="80" y="394" fill="#C9A96E" font-size="12" font-weight="700">▼ 已知局限</text>
+          <text x="80" y="416" fill="#a8a8a8" font-size="11.5">• Over-smoothing</text>
+          <text x="80" y="436" fill="#a8a8a8" font-size="11.5">• Over-squashing</text>
+          <text x="80" y="456" fill="#a8a8a8" font-size="11.5">• 异质性陷阱</text>
+
+          <text x="80" y="494" fill="#C9A96E" font-size="12" font-weight="700">▼ 应用</text>
+          <text x="80" y="516" fill="#a8a8a8" font-size="11">• 5G 配置命令知识图谱 ★</text>
+          <text x="80" y="534" fill="#a8a8a8" font-size="11">• 卫星时变拓扑编码 ★</text>
+          <text x="80" y="552" fill="#a8a8a8" font-size="11">• 区块链节点关系</text>
+
+          <!-- ===== 右：RL 分支节点 ===== -->
+          <rect x="650" y="130" width="200" height="50" rx="12" fill="rgba(201,169,110,0.10)" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="750" y="156" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="14">强化学习 RL</text>
+          <text x="750" y="173" text-anchor="middle" fill="#a8a8a8" font-size="11">决策 → 优化</text>
+
+          <!-- RL 基石：贝尔曼方程 -->
+          <rect x="595" y="200" width="310" height="42" rx="10" fill="rgba(201,169,110,0.10)" stroke="#C9A96E" stroke-width="1.2"/>
+          <text x="750" y="218" text-anchor="middle" fill="#C9A96E" font-size="12" font-weight="700">▼ 基石 · 贝尔曼方程</text>
+          <text x="750" y="234" text-anchor="middle" fill="#a8a8a8" font-size="10.5" font-style="italic">V*(s) = max_a [ R + γ Σ P · V*(s') ]</text>
+
+          <!-- ====== RL 子分支 ① · Value vs Policy vs Actor-Critic ====== -->
+          <text x="455" y="277" fill="#C9A96E" font-size="13" font-weight="700">▸ 范式 1 · 算法类型：Value vs Policy vs Actor-Critic</text>
+          <text x="475" y="299" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">Value-based</tspan>　Q-learning · SARSA · DQN · Rainbow</text>
+          <text x="475" y="319" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">Policy-based</tspan>　REINFORCE · TRPO · PPO</text>
+          <text x="475" y="339" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">Actor-Critic（融合）</tspan>　DDPG ★ · TD3 · SAC · A2C / A3C</text>
+
+          <!-- ====== RL 子分支 ② · On vs Off-policy ====== -->
+          <text x="455" y="371" fill="#C9A96E" font-size="13" font-weight="700">▸ 范式 2 · 采样策略：On-policy vs Off-policy</text>
+          <text x="475" y="393" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">On-policy</tspan>　SARSA · PPO · A2C / A3C · IMPALA</text>
+          <text x="475" y="413" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">Off-policy</tspan>　Q-learning · DQN · DDPG · TD3 · SAC（+ Replay Buffer）</text>
+
+          <!-- ====== RL 子分支 ③ · MARL ====== -->
+          <text x="455" y="441" fill="#C9A96E" font-size="13" font-weight="700">▸ 扩展 1 · 多智能体 MARL</text>
+          <text x="475" y="463" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">CTDE 范式</tspan>　QMIX ★ · MADDPG · MAPPO · COMA</text>
+          <text x="475" y="481" fill="#888" font-size="10.5" font-style="italic">应用：卫星分簇专利 = GNN-GRU + QMIX ★</text>
+
+          <!-- ====== RL 子分支 ④ · LLM 时代的 RL ====== -->
+          <text x="455" y="507" fill="#C9A96E" font-size="13" font-weight="700">▸ 扩展 2 · LLM 时代的 RL（研究跟进）</text>
+          <text x="475" y="529" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">对齐</tspan>　RLHF (PPO + KL) · DPO · IPO · KTO · SimPO</text>
+          <text x="475" y="547" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">推理</tspan>　GRPO（DeepSeek-R1） · DAPO · REINFORCE++ · RLOO</text>
+          <text x="475" y="565" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">奖励</tspan>　RLVR · PRM · ORM · Self-Rewarding · RLAIF</text>
+
+          <!-- ====== RL 子分支 ⑤ · Agentic-RL ====== -->
+          <text x="455" y="597" fill="#C9A96E" font-size="13" font-weight="700">▸ 扩展 3 · Agentic-RL（研究跟进）</text>
+          <text x="475" y="619" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">方向</tspan>　WebGPT · ToolFormer · SWE-RL · Devin / Claude Code</text>
+          <text x="475" y="637" fill="#a8a8a8" font-size="11.5"><tspan fill="#C9A96E" font-weight="700">技术</tspan>　Step-level RL · Reflexion · 自我演化 · RAGEN</text>
+          <text x="475" y="660" fill="#888" font-size="10.5" font-style="italic">与 Agent 视角 Planning / Tool-use 直接打通 —— 三视角真正闭环</text>
+        </svg>
+      </div>
+      <div class="mindmap-caption">★ = 已在项目 / 专利中实战 ▸ RL 子树五个并列子范式：算法类型 · 采样策略 · MARL · LLM 时代的 RL · Agentic-RL，前两个是公理性分类轴，后三个是应用扩展 ▸ 左右两支通过「GNN 编码 + RL 决策」协同闭合</div>
+    </div>
+
+    <!-- ===================== Layer 1: GNN vs RL ===================== -->
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">第一章 · 图神经网络 vs 强化学习</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">两种范式的本质差异</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>研究对象：</strong>GNN 解决"<strong>表示</strong>"问题 —— 如何把图结构（节点 + 边 + 全局）压缩为可被下游任务消费的向量；RL 解决"<strong>决策</strong>"问题 —— 在与环境交互中如何选择动作以最大化累积奖励。</div>
+          <div class="detail-arch-item"><strong>监督信号：</strong>GNN 通常是监督 / 半监督 / 自监督学习 —— 训练样本是「图 → 标签」对；RL 是<strong>没有静态标签</strong>的，监督信号来自环境给出的奖励，且奖励经常是稀疏、延迟、嘈杂的。</div>
+          <div class="detail-arch-item"><strong>数据分布：</strong>GNN 的训练样本通常 i.i.d.；RL 的样本是<strong>序贯相关</strong>的（s_t → a_t → r_t → s_{t+1}），状态分布本身又依赖于策略 —— 这是 RL 比监督学习困难得多的根因。</div>
+          <div class="detail-arch-item"><strong>互补关系：</strong>GNN 是"地图（map）"，RL 是"导航员（navigator）"。在我做的 <a href="../projects/satellite-qos.html">卫星 QoS 分簇路由专利</a> 工作中，GNN-GRU 负责把全网链路质量矩阵 + 时序变化压缩成隐状态，QMIX 多智能体强化学习负责在此隐状态上做分簇路由决策 —— 两者天然耦合。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">图神经网络（GNN）的核心机制：消息传递</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>统一框架（Message Passing Neural Network, MPNN）：</strong>
+            <br/>每个节点 v 在第 k 层的嵌入更新规则：
+            <br/>&emsp;<code>m_v^(k) = AGG^(k)( { h_u^(k-1) : u ∈ N(v) } )</code> &emsp;（聚合邻居）
+            <br/>&emsp;<code>h_v^(k) = UPDATE^(k)( h_v^(k-1), m_v^(k) )</code> &emsp;（更新自身）
+            <br/>不同 GNN 变种就是 AGG / UPDATE 两个函数的不同实现。
+          </div>
+          <div class="detail-arch-item"><strong>GCN（Graph Convolutional Network, Kipf & Welling 2017）：</strong>
+            <br/>聚合规则 <code>H^(k) = σ( D̃^(-1/2) Ã D̃^(-1/2) H^(k-1) W^(k) )</code>，其中 Ã = A + I。
+            <br/>本质是<strong>对称归一化的邻居均值 + 线性变换 + 非线性</strong>。优点是数学优雅、参数少；缺点是<strong>转导式（transductive）</strong> —— 训练好的模型不能直接泛化到没见过的节点。
+          </div>
+          <div class="detail-arch-item"><strong>GraphSAGE（Hamilton et al. 2017）：</strong>
+            <br/>采样 K 阶邻居 + 可学习的聚合函数（mean / max-pool / LSTM）。关键贡献是<strong>归纳式（inductive）</strong> —— 训练完后能直接对新节点做嵌入推断。
+            <br/><strong>个人实践：</strong>在 <a href="../projects/5g-intent.html">5G 核心网意图驱动配置项目</a> 中我用两层 GraphSAGE 对 5,333 个配置命令构成的知识图谱做节点嵌入，相比 GCN 在「新命令上线」的增量场景下显著更友好 —— 这正是 inductive 的实际价值。
+          </div>
+          <div class="detail-arch-item"><strong>GAT（Graph Attention Network, Veličković et al. 2018）：</strong>
+            <br/>把 Transformer 的注意力机制移植到图上 —— 用 attention 权重 α_{vu} 代替均值，让不同邻居对中心节点的贡献是可学习的：
+            <br/>&emsp;<code>α_{vu} = softmax_u( LeakyReLU( a^T [W h_v ‖ W h_u] ) )</code>
+            <br/>&emsp;<code>h_v' = σ( Σ_u α_{vu} W h_u )</code>
+            <br/>优点是对噪声邻居天然抗拒；缺点是计算开销大。
+          </div>
+          <div class="detail-arch-item"><strong>更深的 GNN（GIN / GraphSAINT / GraphMAE / GNN-GRU）：</strong>
+            <br/>• <strong>GIN</strong>（Xu et al. 2019）：用 MLP + sum 聚合，在理论上等价于 Weisfeiler-Lehman 图同构检验上界，是表达能力最强的 MPNN 之一。
+            <br/>• <strong>GraphSAINT</strong>：子图采样，让超大图也能小批量训练。
+            <br/>• <strong>GraphMAE</strong>：图自监督预训练，类似 BERT 的 mask & reconstruct 思想。
+            <br/>• <strong>GNN-GRU / Spatio-Temporal GNN</strong>：在时序图（如卫星链路质量随时间变化）上联合捕捉空间与时间依赖。<strong>我在 <a href="../publications/patent-satellite-qos.html">卫星 QoS 分簇路由专利</a> 中使用 GNN-GRU 对 LEO-MEO 双层星座的时变拓扑做联合编码。</strong>
+          </div>
+          <div class="detail-arch-item"><strong>GNN 的局限：</strong>
+            <br/>① <strong>过度平滑（Over-smoothing）</strong>：层数过深时所有节点嵌入趋同。
+            <br/>② <strong>过度挤压（Over-squashing）</strong>：远距离信息在多跳传递中被压缩失真。
+            <br/>③ <strong>异质性陷阱</strong>：当邻居与中心节点标签相反时（异质图），简单消息传递反而引入噪声。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Layer 2: RL from Bellman ===================== -->
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">第二章 · 强化学习：从贝尔曼方程出发</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">2.1 MDP 形式化：把"决策"变成可优化对象</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>马尔可夫决策过程（MDP）五元组：</strong>
+            <br/>&emsp;<code>M = ⟨S, A, P, R, γ⟩</code>
+            <br/>• <strong>S</strong>：状态空间（在我做的卫星路由中是「全网链路质量矩阵 + 缓冲队列 + 业务类型」）。
+            <br/>• <strong>A</strong>：动作空间（路由场景下是「为每条流分配到哪些路径上、各路径的分流比例」）。
+            <br/>• <strong>P(s' | s, a)</strong>：状态转移概率，刻画环境动力学。
+            <br/>• <strong>R(s, a)</strong>：即时奖励函数（路由场景下是「-时延 + 吞吐 - 丢包」的加权和）。
+            <br/>• <strong>γ ∈ [0,1)</strong>：折扣因子，权衡短期与长期收益。
+          </div>
+          <div class="detail-arch-item"><strong>策略与价值：</strong>
+            <br/>• <strong>策略</strong> π(a | s)：状态 → 动作分布。
+            <br/>• <strong>状态价值函数</strong> V^π(s) = E_π [ Σ_{t=0}^∞ γ^t r_t | s_0 = s ]
+            <br/>• <strong>动作价值函数</strong> Q^π(s, a) = E_π [ Σ_{t=0}^∞ γ^t r_t | s_0 = s, a_0 = a ]
+            <br/>RL 的目标是找到最优策略 π* 使得 V^π*(s) 在所有状态上最大。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">2.2 贝尔曼方程：RL 的基石</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>贝尔曼期望方程（Bellman Expectation Equation）：</strong>
+            <br/>&emsp;<code>V^π(s) = Σ_a π(a|s) · [ R(s,a) + γ Σ_{s'} P(s'|s,a) V^π(s') ]</code>
+            <br/>&emsp;<code>Q^π(s, a) = R(s,a) + γ Σ_{s'} P(s'|s,a) · Σ_{a'} π(a'|s') Q^π(s', a')</code>
+            <br/>含义：当前价值 = 当下奖励 + γ × 期望的下一步价值。<strong>这是把"长期决策"递归压缩为"一步决策"的根本工具。</strong>
+          </div>
+          <div class="detail-arch-item"><strong>贝尔曼最优方程（Bellman Optimality Equation）：</strong>
+            <br/>&emsp;<code>V*(s) = max_a [ R(s,a) + γ Σ_{s'} P(s'|s,a) V*(s') ]</code>
+            <br/>&emsp;<code>Q*(s, a) = R(s,a) + γ Σ_{s'} P(s'|s,a) · max_{a'} Q*(s', a')</code>
+            <br/>把"期望"换成"取最大"，描述的就是最优策略下的价值递归关系。这一方程是 Q-learning、DQN、值迭代算法的直接来源。
+          </div>
+          <div class="detail-arch-item"><strong>方程的两层意义：</strong>
+            <br/>① <strong>数学上</strong>：在有限 MDP 中贝尔曼最优方程是压缩映射，存在唯一不动点 V*，迭代必收敛 —— 这是值迭代（Value Iteration）算法的理论根基。
+            <br/>② <strong>工程上</strong>：当 S 或 A 很大（无法精确求解期望）时，用神经网络做<strong>函数逼近</strong>得到 Q_θ(s, a)，把贝尔曼方程的两边差异作为损失函数 —— 这就是 DQN 与所有后续深度 RL 算法的统一基底。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">2.3 第一条分类轴：Value-based vs Policy-based</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>Value-based（基于价值）：</strong>
+            <br/>不直接学 π，而是学 Q_θ(s, a)，由 argmax_a Q_θ(s, a) 间接得到策略。
+            <br/>• <strong>Q-learning（Watkins 1989）</strong>：表格法，更新公式 <code>Q(s,a) ← Q(s,a) + α [r + γ max_{a'} Q(s', a') - Q(s,a)]</code>。
+            <br/>• <strong>DQN（Mnih et al. 2015, Atari Nature 论文）</strong>：用 CNN 逼近 Q，三大工程贡献 —— <strong>Experience Replay</strong>（打破样本相关性）、<strong>Target Network</strong>（稳定 bootstrap 目标）、<strong>奖励裁剪</strong>。
+            <br/>• <strong>Rainbow DQN</strong>：把 Double DQN、Dueling DQN、Prioritized Replay、Noisy Net、Distributional RL、Multi-step 六项改进打包。
+            <br/><strong>优势：</strong>样本效率高、训练相对稳定。
+            <br/><strong>局限：</strong>argmax 操作要求动作空间离散且不太大；连续动作 / 高维动作直接吃瘪。
+          </div>
+          <div class="detail-arch-item"><strong>Policy-based（基于策略）：</strong>
+            <br/>直接参数化策略 π_θ(a | s)，用<strong>策略梯度定理</strong>更新参数：
+            <br/>&emsp;<code>∇_θ J(θ) = E_π [ ∇_θ log π_θ(a|s) · Q^π(s, a) ]</code>
+            <br/>• <strong>REINFORCE（Williams 1992）</strong>：最朴素的策略梯度，用蒙特卡洛回报 G_t 代替 Q^π(s, a)。方差极大。
+            <br/>• <strong>TRPO（Schulman 2015）</strong>：用 KL 散度约束保证策略不剧变（trust region）。
+            <br/>• <strong>PPO（Schulman 2017）</strong>：把 TRPO 的硬约束改为 clipped objective，工程实现极简、效果好，目前已是 RL 微调（包括 RLHF）的事实标准。
+            <br/><strong>优势：</strong>天然支持连续动作 / 随机策略 / 多模态动作分布。
+            <br/><strong>局限：</strong>方差大、样本效率低。
+          </div>
+          <div class="detail-arch-item"><strong>Actor-Critic（融合方案）：</strong>
+            <br/>Actor 负责输出策略 π_θ(a | s)，Critic 负责估计 V_φ(s) 或 Q_φ(s, a) 作为 baseline 降低方差：
+            <br/>&emsp;<code>∇_θ J(θ) = E_π [ ∇_θ log π_θ(a|s) · A(s, a) ]，其中 A(s, a) = Q(s, a) − V(s)</code>
+            <br/>• <strong>A2C / A3C</strong>：异步多 worker 收集样本。
+            <br/>• <strong>DDPG（Lillicrap 2015）</strong>：把 DQN 的"argmax"换成确定性策略 μ_θ(s)，专为<strong>连续动作空间</strong>设计。配套 <strong>Target Network + Replay Buffer + OU 探索噪声</strong>。
+            <br/>• <strong>TD3（Fujimoto 2018）</strong>：DDPG 的稳定化版本（Twin Critic + Delayed Policy Update + Target Smoothing）。
+            <br/>• <strong>SAC（Haarnoja 2018）</strong>：在目标里加熵正则项，鼓励策略保持随机性，探索更充分。当下连续动作 RL 的事实标准。
+            <br/><strong>个人实践：</strong>我在 <a href="../projects/satellite-qos.html">太赫兹卫星 QMR + 改进 DDPG 路由</a> 中正是用 Actor-Critic 架构 —— Actor 输出每条路径的分流比例（连续动作），Critic 评估"在当前链路质量下分流方案的长期 QoS 收益"，配合软更新 τ=1e-3、OU 噪声 (μ=0, θ=0.15, σ=0.2)，训练奖励从 −65,400 提升至 +342,265。这是贝尔曼方程在工业场景下的完整工程化展开。
+          </div>
+          <div class="detail-arch-item"><strong>选型心智：</strong>
+            <br/>• 动作离散且不大 → DQN / Rainbow
+            <br/>• 动作连续 → DDPG / TD3 / SAC
+            <br/>• 任务需要随机性 / 多模态 → SAC / PPO
+            <br/>• 高样本成本（真实机器人）→ off-policy 算法（SAC / TD3）
+            <br/>• 高度并行可仿真（游戏）→ on-policy 算法（PPO / IMPALA）
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">2.4 第二条分类轴：On-policy vs Off-policy</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定义：</strong>
+            <br/>• <strong>On-policy</strong>：用于更新的样本必须来自<strong>当前正在被优化的策略</strong>。策略一旦更新，旧样本立即作废。
+            <br/>• <strong>Off-policy</strong>：用于更新的样本可以来自<strong>其它策略</strong>（如历史经验、人类示范、其它智能体）。引入<strong>行为策略</strong>（behavior policy） μ 与<strong>目标策略</strong>（target policy） π 的分离。
+          </div>
+          <div class="detail-arch-item"><strong>典型代表：</strong>
+            <br/>• <strong>On-policy</strong>：SARSA、REINFORCE、A2C、A3C、PPO、TRPO、IMPALA（V-trace 修正）。
+            <br/>• <strong>Off-policy</strong>：Q-learning、DQN、DDPG、TD3、SAC。
+          </div>
+          <div class="detail-arch-item"><strong>SARSA vs Q-learning ——「on / off」最经典的对照实验：</strong>
+            <br/>两者更新公式仅一字之差：
+            <br/>&emsp;<strong>SARSA（on-policy）</strong>：<code>Q(s,a) ← Q(s,a) + α [r + γ Q(s', a') − Q(s,a)]</code>，其中 a' 是当前策略实际采取的动作。
+            <br/>&emsp;<strong>Q-learning（off-policy）</strong>：<code>Q(s,a) ← Q(s,a) + α [r + γ max_{a'} Q(s', a') − Q(s,a)]</code>，目标用 max 而不依赖实际动作。
+            <br/>差异的工程后果：在著名的"<strong>悬崖行走（Cliff Walking）</strong>"问题中，SARSA 会学到"沿安全路径走"（因为它把"探索动作的代价"纳入了价值估计），Q-learning 会学到"沿悬崖最短路走"（因为它认为最优策略不会掉下去）。这告诉我们：<strong>off-policy 学到的是"最优策略下的价值"，on-policy 学到的是"当前策略下的价值"，两者目标不同。</strong>
+          </div>
+          <div class="detail-arch-item"><strong>Off-policy 的关键技术 —— 重要性采样（Importance Sampling）：</strong>
+            <br/>当用 μ 采样估计 π 的期望时：
+            <br/>&emsp;<code>E_π[f(x)] = E_μ[ (π(x) / μ(x)) · f(x) ]</code>
+            <br/>路径上的重要性比 (π/μ) 累乘会带来巨大方差，因此 PPO / IMPALA 等"近 on-policy"方法引入 clipping / V-trace 限制比值。
+          </div>
+          <div class="detail-arch-item"><strong>Replay Buffer 与样本复用：</strong>
+            <br/>Off-policy 算法天然支持 Experience Replay —— 把历史 (s, a, r, s') 存入缓冲区反复采样，样本效率提升一个数量级。这是 DDPG / TD3 / SAC 在机器人控制等"高样本成本"场景几乎独霸的根因。
+          </div>
+          <div class="detail-arch-item"><strong>权衡矩阵：</strong>
+            <br/>
+            <table style="border-collapse:collapse;margin:8px 0;font-size:.9em;">
+              <tr style="border-bottom:1px solid #555;"><th style="padding:6px 10px;text-align:left;">维度</th><th style="padding:6px 10px;text-align:left;">On-policy</th><th style="padding:6px 10px;text-align:left;">Off-policy</th></tr>
+              <tr><td style="padding:4px 10px;">样本效率</td><td style="padding:4px 10px;">低（用一次扔）</td><td style="padding:4px 10px;">高（反复用）</td></tr>
+              <tr><td style="padding:4px 10px;">训练稳定性</td><td style="padding:4px 10px;">高</td><td style="padding:4px 10px;">中（需 target net + replay 等技巧）</td></tr>
+              <tr><td style="padding:4px 10px;">探索-利用</td><td style="padding:4px 10px;">由策略本身决定</td><td style="padding:4px 10px;">可独立设计探索策略</td></tr>
+              <tr><td style="padding:4px 10px;">分布偏移风险</td><td style="padding:4px 10px;">无</td><td style="padding:4px 10px;">高（need IS 或 clipping）</td></tr>
+              <tr><td style="padding:4px 10px;">连续动作</td><td style="padding:4px 10px;">PPO / SAC 可</td><td style="padding:4px 10px;">DDPG / TD3 / SAC 可</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">2.5 多智能体强化学习（MARL）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>挑战：</strong>当多个智能体共同决策时，每个智能体的最优策略依赖于其他智能体的策略 —— 环境不再 Markov（违反 stationarity），单智能体 RL 直接套用会发散。</div>
+          <div class="detail-arch-item"><strong>典型范式：</strong>
+            <br/>• <strong>CTDE（Centralized Training, Decentralized Execution）</strong>：训练时共享全局信息，执行时每个 agent 只用局部观测。代表：MADDPG、QMIX、MAPPO。
+            <br/>• <strong>QMIX（Rashid 2018）</strong>：每个 agent 学独立 Q_i(τ_i, a_i)，再用单调混合网络把它们组合成全局 Q_tot，满足 <code>argmax Q_tot = (argmax Q_1, …, argmax Q_n)</code> 的 IGM 条件 —— 既保留协同又支持分布式执行。
+            <br/>• <strong>MAPPO</strong>：PPO 的多智能体扩展，actor 局部、critic 全局。
+          </div>
+          <div class="detail-arch-item"><strong>个人实践：</strong>在 <a href="../publications/patent-satellite-qos.html">卫星 QoS 分簇路由专利</a> 中我把"每个卫星簇头"建模为一个 agent，使用 <strong>GNN-GRU + QMIX</strong> 多智能体协同决策 —— GNN-GRU 编码全网时空状态作为 Critic 的全局信息，QMIX 实现分簇局部策略 + 全局 Q 协同。这套架构正是为了在 LEO-MEO 双层星座下实现差异化 QoS 保障。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Layer 3: LLM RL + Agentic-RL（前沿延伸） ===================== -->
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">第三章 · LLM 时代的 RL：从 RLHF 到 GRPO 到 Agentic-RL（前沿延伸 · 研究方向）</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">为什么这一章必须存在 —— RL 工具链在 LLM 时代的复兴</div>
+        <div class="detail-section-content">
+          经典 RL 在 2017 年 AlphaGo 后曾陷入"<strong>除游戏与机器人外难找落地</strong>"的尴尬期。<strong>2022 年 ChatGPT 出世</strong>把 RL 重新推到工业界的中心 —— RLHF（PPO）是 InstructGPT / ChatGPT 训练的核心阶段。<strong>2024 年 DeepSeek-Math / DeepSeek-R1 提出 GRPO</strong>，又把 RL 推到推理时代的中央 —— LLM 的"长思维链"能力是 RL 涌现的，不是监督训练教会的。2024–2025 年学界与工业界共同推进 <strong>Agentic-RL</strong>，把 RL 从"单步 token 输出"升维到"多轮工具调用的长轨迹"。<br/><br/>
+          这一章我<strong>没有亲手训练过 LLM RL，但已经把它列为下一阶段的研究方向</strong>。原因有三：① 我已在网络路由场景熟悉 RL 工具链（DDPG / QMIX / Actor-Critic），切换到 LLM RL 算法语言基本不变；② <a href="../capabilities/agent.html">Agent 视角</a>页讨论的 Plan-Execute-Replan、MCP 工具调用与 Agentic-RL 是同一个问题的算法面与工程面；③ 这是把"算法视角 + Agent 视角 + 系统视角"真正闭环的唯一通路。
+        </div>
+      </div>
+
+      <!-- ============ 3.1 RLHF ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.1 RLHF：PPO 在 LLM 上的落地（InstructGPT 范式）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>三阶段流程（Ouyang et al. InstructGPT 2022）：</strong>
+            <br/>① <strong>SFT（Supervised Fine-Tuning）</strong>：用人类示范数据集做监督微调，让基座模型先学会"按指令回答"的格式。
+            <br/>② <strong>Reward Model 训练</strong>：人类对同一 prompt 的多个回答做 chosen / rejected 偏好对比，训练一个标量奖励模型 r_ϕ(x, y)。常用 Bradley-Terry 模型作为偏好概率分布。
+            <br/>③ <strong>PPO RL</strong>：以 SFT 模型为初始策略 π_θ，以 r_ϕ 为奖励信号，用 PPO 优化策略。
+          </div>
+          <div class="detail-arch-item"><strong>PPO 在 LLM 上的关键改造：</strong>
+            <br/>• <strong>KL 散度约束（reference model）</strong>：目标函数加上 −β·KL(π_θ ‖ π_ref) 一项，防止策略偏离初始 SFT 模型过远（避免"reward hacking" —— 模型为了刷分胡言乱语）。
+            <br/>• <strong>Token-level 优势估计</strong>：把整个 completion 拆成 token 序列，每个 token 是一个动作，用 GAE（Generalized Advantage Estimation）估优势。
+            <br/>• <strong>Value Head</strong>：在 Transformer 顶部加一个标量输出头作为 Critic，估计 V(s) 给 PPO 做 baseline。
+            <br/>• <strong>Clipped Objective</strong>：经典 PPO 的 clip(r, 1−ε, 1+ε) 防止策略更新过激（ε 通常 0.2）。
+          </div>
+          <div class="detail-arch-item"><strong>为什么是 PPO 而不是其它 RL 算法？</strong>
+            <br/>• 动作空间是 vocab（10w+ 离散），DQN argmax 不适用；
+            <br/>• 训练稳定性要求高，TRPO 的 trust region 太重，PPO 是最佳折中；
+            <br/>• On-policy 易于与大批量分布式训练（rollout → 训练 → rollout）配合。
+          </div>
+          <div class="detail-arch-item"><strong>痛点：</strong>
+            <br/>① <strong>显存爆炸</strong>：同时载入 4 个模型 —— Actor、Critic、Reward Model、Reference Model，每个都是百亿参数级；
+            <br/>② <strong>训练不稳定</strong>：reward hacking、policy collapse 频繁；
+            <br/>③ <strong>Reward Model 偏差</strong>：人类偏好数据噪声大，RM 容易学到不该学的"啰嗦 = 更好"等捷径；
+            <br/>④ <strong>工程链路长</strong>：四阶段调参，做一次实验耗时一周以上。
+          </div>
+          <div class="detail-arch-item"><strong>代表实现：</strong>TRL（HuggingFace）、OpenRLHF、DeepSpeed-Chat、veRL（字节跳动开源）。<strong>个人跟进：</strong>已通读 TRL 与 OpenRLHF 源码，理解 PPO trainer 的 generation buffer + advantage 计算 + clipped loss 三段式实现。</div>
+        </div>
+      </div>
+
+      <!-- ============ 3.2 DPO ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.2 DPO：跳过 Reward Model 的"RL-free" 捷径</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>核心洞察（Rafailov et al. NeurIPS 2023 Best Paper）：</strong>RLHF 的最优策略对 reward function 有解析解 r(x, y) = β·log[π*(y|x) / π_ref(y|x)] + const。把这一关系代入 Bradley-Terry 偏好模型，<strong>整个 RLHF 流程可以直接改写为一个监督学习损失</strong>：
+            <br/><code>L_DPO(θ) = −E[log σ(β · log(π_θ(y_w|x)/π_ref(y_w|x)) − β · log(π_θ(y_l|x)/π_ref(y_l|x)))]</code>
+            <br/>其中 y_w 是 chosen（偏好）、y_l 是 rejected（拒绝）。
+          </div>
+          <div class="detail-arch-item"><strong>优势：</strong>
+            <br/>• 无 Reward Model：训练管线从四模型简化为两模型（policy + reference），<strong>显存砍半，训练稳定性翻倍</strong>；
+            <br/>• 无 RL 优化器：不再有 PPO 的 sample → reward → advantage 循环，纯监督学习；
+            <br/>• 数学优雅：用一个 sigmoid + log-ratio 把 RL 压缩成一行损失。
+          </div>
+          <div class="detail-arch-item"><strong>劣势：</strong>
+            <br/>• 性能上限受参考模型 π_ref 制约；
+            <br/>• 对偏好数据分布敏感，超出 π_ref 覆盖范围的样本难以利用；
+            <br/>• 无法处理"非偏好"奖励（如代码运行结果、数学答案对错）—— 这类用 GRPO 更合适。
+          </div>
+          <div class="detail-arch-item"><strong>衍生家族：</strong>
+            <br/>• <strong>IPO (Identity Preference Optimization)</strong>：用 squared loss 替代 sigmoid，缓解 DPO 在偏好对完全可分时的过拟合；
+            <br/>• <strong>KTO (Kahneman-Tversky Optimization)</strong>：基于行为经济学的损失函数，可用单点（chosen 或 rejected 任一）而非成对偏好；
+            <br/>• <strong>ORPO</strong>：把 SFT 与偏好对齐合并为单阶段；
+            <br/>• <strong>SimPO</strong>：去掉 reference model 进一步简化。
+            <br/>这一脉的趋势是<strong>不断"去 RL 化"</strong> —— 把 RL 改造为可监督学习的等价形式。
+          </div>
+          <div class="detail-arch-item"><strong>选型心智：</strong>偏好对齐 + 数据干净 → DPO 系；推理任务 + 有可验证 reward → GRPO 系（见下）；既要灵活性又要复杂奖励 → 老老实实跑 PPO。</div>
+        </div>
+      </div>
+
+      <!-- ============ 3.3 GRPO ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.3 GRPO：DeepSeek 的群组相对策略优化（推理时代主力）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>来源：</strong>由 DeepSeek-Math 论文（Shao et al. 2024）首次提出，DeepSeek-V2 / V3 沿用，<strong>DeepSeek-R1 使其举世闻名</strong>。GRPO 全称 Group Relative Policy Optimization。</div>
+          <div class="detail-arch-item"><strong>核心思想 —— 用"组内相对优势"替代 Critic：</strong>
+            <br/>① 对同一个 prompt q，让当前策略 π_θ 采样 G 个不同的回答 {o_1, …, o_G}（一个"group"）；
+            <br/>② 对每个回答用 reward model（或可验证器）打分得到 {r_1, …, r_G}；
+            <br/>③ 优势直接用组内归一化定义：<code>A_i = (r_i − mean(r_1..r_G)) / std(r_1..r_G)</code>；
+            <br/>④ 套 PPO 的 clipped objective + KL 散度约束：<code>L_GRPO = E[ min(ρ_i A_i, clip(ρ_i, 1−ε, 1+ε) A_i) − β·KL(π_θ ‖ π_ref) ]</code>，其中 ρ_i = π_θ(o_i|q) / π_old(o_i|q)。
+          </div>
+          <div class="detail-arch-item"><strong>为什么 GRPO 是"杀手锏"：</strong>
+            <br/>• <strong>无 Critic Value Network</strong>：直接砍掉一个百亿参数模型，<strong>显存省 25–40%</strong>，PPO 训练 LLM 最大痛点之一被解决；
+            <br/>• <strong>Group-relative baseline 天然降方差</strong>：同组样本共享 prompt，组内对比比 critic 估计的 baseline 更准；
+            <br/>• <strong>RLVR 场景下惊人有效</strong>：当 reward 来自可验证器（数学答案、代码执行、单元测试通过），GRPO + 验证器 reward 让 DeepSeek-R1-Zero <strong>从纯基座模型"涌现"长 CoT 推理能力</strong>，无需任何 SFT。
+          </div>
+          <div class="detail-arch-item"><strong>GRPO vs PPO（数学等价性视角）：</strong>
+            <br/>PPO 用 critic 估计 V(s) 做 baseline 减方差，GRPO 用 group mean 做 baseline 减方差。两者在数学上都属于 <strong>policy gradient + baseline 减方差</strong> 这一族 —— GRPO 是"不要 critic、改用蒙特卡洛组内基线"的特例。可以理解为：<strong>GRPO = PPO − Critic + Group Baseline</strong>。
+          </div>
+          <div class="detail-arch-item"><strong>DeepSeek-R1 的范式启示：</strong>
+            <br/>R1-Zero 证明了一件惊人的事 —— <strong>不需要任何思维链 SFT 数据</strong>，仅靠 GRPO + 数学/代码可验证奖励，基座模型自己就能"涌现"反思（"wait, let me reconsider…"）、自我验证、回溯等高阶推理行为。<strong>这是 RL 工具链 6 年来最大的范式跃迁</strong>，意味着推理能力可以"用 RL 训出来"而不必依赖大量人工标注。
+          </div>
+          <div class="detail-arch-item"><strong>同期 / 后续衍生：</strong>
+            <br/>• <strong>REINFORCE++ / RLOO</strong>：用类似的"无 critic + leave-one-out baseline"思想，与 GRPO 殊途同归；
+            <br/>• <strong>DAPO</strong>（字节，2025）：在 GRPO 基础上加入动态采样、token-level 损失、不对称 clip 等改进；
+            <br/>• <strong>VAPO / GSPO</strong>：进一步优化 sample 效率与稳定性。
+          </div>
+          <div class="detail-arch-item"><strong>RLVR 关键 unlock：</strong>之前阻碍 RL 在 LLM 大规模应用的最大瓶颈是 "reward 从哪来"。RM 训练成本高、偏差大。<strong>RLVR (Reinforcement Learning with Verifiable Rewards)</strong> 把 reward 退化为"程序自动判分"：数学题用 SymPy 验答案、代码用单元测试、定理证明用形式化验证器。这让 RL 突破 RM 的"天花板"，是 R1 / o1 / QwQ 现象的核心驱动力。</div>
+        </div>
+      </div>
+
+      <!-- ============ 3.4 推理时代的 RL ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.4 推理时代的 RL：PRM、Self-play 与 Test-Time Compute</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>过程奖励 PRM vs 结果奖励 ORM：</strong>
+            <br/>• <strong>ORM (Outcome Reward Model)</strong>：只对最终答案打分（稀疏，credit assignment 难）。
+            <br/>• <strong>PRM (Process Reward Model)</strong>：对推理每一步打分（密集，更精细，但需要 step-level 标注数据集，如 OpenAI 的 PRM800K）。
+            <br/>• <strong>权衡</strong>：ORM 简单但样本效率低；PRM 信号丰富但数据贵。当前主流是"<strong>ORM 主导 + PRM 辅助</strong>"。
+          </div>
+          <div class="detail-arch-item"><strong>Test-Time Compute（推理时计算）：</strong>RL 训练完之后，推理时再做一次搜索 / 采样进一步提升能力 —— Best-of-N 采样、Beam Search、MCTS、Self-Consistency Voting。<strong>o1 / DeepSeek-R1 / Qwen-QwQ</strong> 的核心创新正是把"训练时 RL 涌现 + 推理时长 CoT"两段融合。</div>
+          <div class="detail-arch-item"><strong>Self-play 与自我演化：</strong>
+            <br/>• <strong>Constitutional AI / RLAIF (Anthropic)</strong>：让 AI 给 AI 打分，绕过昂贵的人工标注；
+            <br/>• <strong>Self-Rewarding LM (Yuan et al. 2024)</strong>：模型同时充当 Generator 和 Judge，迭代提升；
+            <br/>• <strong>Self-Play Fine-Tuning (SPIN)</strong>：模型与"上一版本的自己"对抗式训练；
+            <br/>• <strong>R1 路线：</strong>"R1 → 蒸馏小模型 → 数据增强 → 训下一代 R1" 自我演化闭环。
+          </div>
+          <div class="detail-arch-item"><strong>个人观察：</strong>2024–2025 年 LLM RL 的研究曲线异常陡峭，几乎每月都有新算法。但<strong>所有这些算法的底层原理都没跳出第二章讲的贝尔曼方程 + Policy Gradient + 减方差技巧</strong>。这恰恰说明经典 RL 基础的价值 —— 工具变化快，原理变化慢。</div>
+        </div>
+      </div>
+
+      <!-- ============ 3.5 Agentic-RL ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.5 Agentic-RL：把 RL 升维到 Agent 长轨迹</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定义：</strong>Agentic-RL 是把 RL 从"单轮 token 输出"升维到"<strong>多轮工具调用 + 多步规划的完整 Agent 轨迹</strong>"上做优化。Agent 与环境（浏览器、文件系统、API、用户）持续交互，每步选择工具 / 参数 / 是否继续，最终在任务完成时获得 reward。这把 LLM 真正变成"会做事的 agent"而不只是"会聊天的 LM"。</div>
+          <div class="detail-arch-item"><strong>三个代表性方向：</strong>
+            <br/>• <strong>Web Agent</strong>：在浏览器环境里完成任务（搜索、订票、填表）。代表工作：WebGPT (OpenAI 2021)、WebShop / Mind2Web / WebArena / Browser-Use。
+            <br/>• <strong>Tool-using Agent</strong>：训练模型主动调用外部工具。代表：ToolFormer (Meta 2023)、Gorilla、ToolLLM、ToolACE。
+            <br/>• <strong>Code Agent</strong>：在代码仓库 / 终端环境里修 bug、写代码。代表：SWE-agent (Princeton)、SWE-RL (Meta)、Devin (Cognition)、Claude Code。
+          </div>
+          <div class="detail-arch-item"><strong>四大核心挑战：</strong>
+            <br/>① <strong>Reward Sparsity（奖励稀疏）</strong>：长轨迹只有终点有 reward 信号，credit assignment 极困难；
+            <br/>② <strong>Action Space 爆炸</strong>：每步可选工具数 × 参数空间，搜索空间巨大；
+            <br/>③ <strong>Off-policy 数据复用</strong>：trajectory 长到几十轮，replay buffer 成本爆炸；
+            <br/>④ <strong>Environment 不可微 + 不可重置</strong>：浏览器、真实 API 调用无法回退，rollout 成本远高于游戏环境。
+          </div>
+          <div class="detail-arch-item"><strong>前沿技术路线：</strong>
+            <br/>• <strong>Step-level RL</strong>：用 PRM 给每一步打分，把稀疏奖励拆解到每步；
+            <br/>• <strong>Reflexion 风格自我评判</strong>：每个轨迹结束后让模型 reflect "上一轮哪里做错了"，把 reflection 注入下一轮；
+            <br/>• <strong>RAGEN / SWE-RL</strong>：基于 GRPO 把同 prompt 多次 rollout 的 trajectory 做组内对比；
+            <br/>• <strong>Synthetic Trajectory Bootstrap</strong>：先用强模型 (GPT-4 / Claude) 生成示范轨迹做 SFT，再用 RL 微调；
+            <br/>• <strong>AgentEvolver / AutoML for Agent</strong>：把 prompt / tool description / planning 策略本身也作为可演化的对象。
+          </div>
+          <div class="detail-arch-item"><strong>与 <a href="../capabilities/agent.html">Agent 视角</a> 的对应：</strong>
+            <br/>• <strong>Planning</strong> 层（ReAct / Plan-Execute-Replan）的策略本身就是 RL 优化对象；
+            <br/>• <strong>Tool-use</strong> 层的工具选择是 RL 的动作空间；
+            <br/>• <strong>Memory</strong> 层的检索策略可以作为子动作；
+            <br/>• <strong>MCP 协议</strong>为 Agentic-RL 提供了标准化的 action / observation 接口（这是 RL 工程化的关键前置）。
+            <br/>换言之，<strong>Agentic-RL = Agent 视角的算法面 + 算法视角的工程面</strong>。
+          </div>
+          <div class="detail-arch-item"><strong>个人观点：</strong>当前 Agentic-RL 的最大障碍不是算法，而是"<strong>训练环境基础设施</strong>" —— 大规模、可并行、可重置的真实环境模拟（如百万浏览器实例、隔离沙箱、可回放数据库）是缺位的。这一层一旦补齐，Agentic-RL 会迎来类似 ImageNet 之于 CV 的爆发。这也是我特别关注 Anthropic 的 Hermes Agent Runtime / Claude Code Skills 这类基础设施工作的原因 —— 它们正是 Agentic-RL 时代的"<strong>训练数据生产线</strong>"。</div>
+        </div>
+      </div>
+
+      <!-- ============ 3.6 个人定位 ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">3.6 个人定位：从网络 RL 到 LLM RL 的迁移路径</div>
+        <div class="detail-section-content">
+          我目前实战的 RL 是<strong>网络路由场景</strong>（QMR + 改进 DDPG、GNN-GRU + QMIX），状态是连续的链路质量矩阵，动作是连续的分流比例。下一阶段我希望把这一套工具切换到 LLM RL / Agentic-RL 场景，理由有三：
+          <br/>① <strong>算法语言一致性</strong>：贝尔曼方程、Actor-Critic、PPO / DDPG / GRPO 这些工具，从卫星路由到 LLM 训练，本质同构 —— 只是 state / action / reward 的具体实例不同；
+          <br/>② <strong>场景互补性</strong>：网络 RL 的状态是连续向量（链路质量矩阵 64×64），LLM RL 的状态是离散 token 序列（10w vocab × 数千长度）；前者训练我对"<strong>连续动作 + 多智能体协同</strong>"的理解，后者将训练我对"<strong>离散大动作空间 + 长轨迹 credit assignment</strong>"的理解。两类场景互补，能让我对 RL 工具链有更完整的把握；
+          <br/>③ <strong>三视角真正闭环</strong>：Agentic-RL 是 <a href="../capabilities/agent.html">Agent 视角</a>（Planning + Tool-use）+ 算法视角（RL 优化）+ <a href="../capabilities/system.html">系统视角</a>（训练基础设施 + Service Mesh + 数据流水线）的天然交汇 —— 把 Agentic-RL 做明白，就是把我自我定位的三个视角真正联起来。
+          <br/><br/>
+          这一章我没有项目实战可以"展示"，但已经把 TRL、OpenRLHF、veRL、verl-agent、AgentR1 等开源 RLHF / Agentic-RL 框架通读、跑过 demo。这是我硕士最后一年和工作头两年的<strong>核心研究方向</strong>。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Layer 4: GNN + RL Synthesis（原 Layer 3） ===================== -->
+    <section class="detail-layer reveal" id="layer-4">
+      <h2 class="detail-layer-title">第四章 · GNN + RL 的协同 —— 网络方向研究主线（已实战）</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">为什么 GNN 和 RL 必须配合</div>
+        <div class="detail-section-content">
+          网络路由 / 资源调度 / 共识协议优化等问题的状态空间天然是<strong>图结构</strong>，且决策本身是<strong>序贯优化</strong>过程。如果只用 GNN，能得到"当前图的好嵌入"但没有决策能力；如果只用 RL，要么需要手工设计 state feature（脆弱、低效），要么直接用 MLP 处理图状态（破坏图归纳偏置、样本效率灾难）。<strong>GNN 提供 state encoder，RL 提供 policy/value head</strong> —— 这是它们的天然分工。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">个人研究路径：从 QMR + DDPG 到 GNN-GRU + QMIX</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>阶段一（毕业设计 / 项目）：</strong>QMR + 改进 DDPG 两段式多径路由 —— DDPG 输出每条路径的连续分流比例，Actor-Critic 在链路权重矩阵 W = α·D̂ + β·(1−B̂) + γ·L̂ 上做单智能体优化。详见 <a href="../projects/satellite-qos.html">太赫兹卫星网络仿真项目</a>。</div>
+          <div class="detail-arch-item"><strong>阶段二（专利申请）：</strong>把单智能体扩展为多智能体 —— 每个卫星簇头是一个 agent，用 <strong>GNN-GRU 编码时空状态</strong>、用 <strong>QMIX 实现协同决策</strong>，覆盖 LEO-MEO 双层星座差异化 QoS 保障。详见 <a href="../publications/patent-satellite-qos.html">卫星 QoS 分簇路由专利</a>。</div>
+          <div class="detail-arch-item"><strong>下一步思考：</strong>把"路由决策"这一具体问题进一步抽象 —— GNN-GRU 编码 + 多智能体 RL 决策 + LLM Agent 元控制（决定何时重训、何时回滚），形成"算法 + Agent"协同的下一代网络自治范式。这正是我把"算法视角"与"Agent 视角""系统视角"并列的根因 —— 三者在我的认知中本来就是一个连续体。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-5">
+      <h2 class="detail-layer-title">第五章 · 技术栈与相关项目</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">GNN 与经典 RL 技术栈（已实战）</div>
+        <div class="detail-tags">
+          <span class="tag">GCN</span><span class="tag">GraphSAGE</span><span class="tag">GAT</span><span class="tag">GIN</span><span class="tag">GraphSAINT</span>
+          <span class="tag">GraphMAE</span><span class="tag">GNN-GRU</span><span class="tag">Spatio-Temporal GNN</span>
+          <span class="tag">MDP</span><span class="tag">贝尔曼方程</span><span class="tag">Value Iteration</span>
+          <span class="tag">Q-learning</span><span class="tag">SARSA</span><span class="tag">DQN</span><span class="tag">Rainbow DQN</span>
+          <span class="tag">REINFORCE</span><span class="tag">TRPO</span><span class="tag">PPO</span>
+          <span class="tag">A2C / A3C</span><span class="tag">DDPG</span><span class="tag">TD3</span><span class="tag">SAC</span>
+          <span class="tag">On-policy</span><span class="tag">Off-policy</span><span class="tag">Importance Sampling</span>
+          <span class="tag">Experience Replay</span><span class="tag">Target Network</span>
+          <span class="tag">MARL</span><span class="tag">QMIX</span><span class="tag">MADDPG</span><span class="tag">MAPPO</span><span class="tag">CTDE</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">LLM RL / Agentic-RL 技术栈（研究跟进）</div>
+        <div class="detail-tags">
+          <span class="tag">RLHF</span><span class="tag">PPO (LLM)</span><span class="tag">KL Penalty</span><span class="tag">Reference Model</span><span class="tag">Reward Model</span>
+          <span class="tag">DPO</span><span class="tag">IPO</span><span class="tag">KTO</span><span class="tag">ORPO</span><span class="tag">SimPO</span>
+          <span class="tag">GRPO（DeepSeek-R1）</span><span class="tag">DAPO</span><span class="tag">REINFORCE++</span><span class="tag">RLOO</span><span class="tag">VAPO / GSPO</span>
+          <span class="tag">RLVR</span><span class="tag">PRM</span><span class="tag">ORM</span><span class="tag">Best-of-N</span><span class="tag">Self-Consistency</span>
+          <span class="tag">Constitutional AI / RLAIF</span><span class="tag">Self-Rewarding LM</span><span class="tag">SPIN</span>
+          <span class="tag">Agentic-RL</span><span class="tag">Step-level RL</span><span class="tag">Reflexion</span><span class="tag">SWE-RL</span><span class="tag">WebGPT / ToolFormer</span>
+          <span class="tag">TRL</span><span class="tag">OpenRLHF</span><span class="tag">veRL</span><span class="tag">DeepSpeed-Chat</span><span class="tag">RAGEN</span><span class="tag">AgentR1</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">工程实现框架</div>
+        <div class="detail-tags">
+          <span class="tag">PyTorch</span><span class="tag">PyG / DGL</span><span class="tag">Stable-Baselines3</span>
+          <span class="tag">HuggingFace Transformers</span><span class="tag">LLaMA-Factory</span><span class="tag">DeepSpeed</span><span class="tag">vLLM</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">相关项目实践</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>[已实战]</strong> → <a href="../projects/5g-intent.html">5G 核心网意图驱动配置</a> —— BERT + GraphSAGE 在 5,333 命令知识图谱上的对比学习</div>
+          <div class="detail-arch-item"><strong>[已实战]</strong> → <a href="../projects/satellite-qos.html">太赫兹卫星网络仿真</a> —— QMR + 改进 DDPG 两段式路由，Actor-Critic 工程化</div>
+          <div class="detail-arch-item"><strong>[已实战]</strong> → <a href="../publications/patent-satellite-qos.html">卫星 QoS 分簇路由专利</a> —— GNN-GRU + QMIX 多智能体协同决策</div>
+          <div class="detail-arch-item"><strong>[已实战]</strong> → <a href="../publications/icct-2025-5g-intent.html">ICCT 2025 论文</a> —— Knowledge-Enabled Intent-Driven Network Configuration Generation</div>
+          <div class="detail-arch-item"><strong>[已实战]</strong> → <a href="../projects/agent-ops.html">电商秒杀 + Agent 运维系统</a> —— LLaMA-Factory + DeepSpeed 对运维 Agent 做 SFT 领域微调（向 RLHF / Agentic-RL 演进的前置）</div>
+          <div class="detail-arch-item"><strong>[研究跟进]</strong> → LLM RL 工具链 —— 已通读 TRL / OpenRLHF / veRL 源码，跑过 DPO、PPO、GRPO demo</div>
+          <div class="detail-arch-item"><strong>[研究跟进]</strong> → Agentic-RL 前沿 —— 持续跟读 SWE-RL、RAGEN、AgentR1、Reflexion 等论文与代码，作为硕士最后一年与工作头两年的核心研究方向</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

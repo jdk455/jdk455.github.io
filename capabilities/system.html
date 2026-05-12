@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>能力详情 · 系统视角 — 蔡嘉骏</title>
+<meta name="description" content="系统能力详情：后端栈（Redis / Kafka / Flink / Spark / Milvus）、微服务架构（gRPC / Nacos / Sentinel / Service Mesh）、SDN 架构（北向 / 南向 / 东西向）。应用面 + 数据面 + 控制面三柱并立。">
+<link rel="canonical" href="https://jdkjdkjdk.top/capabilities/system.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo"><a href="../">JJ.Cai</a></div>
+  <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="菜单">☰</button>
+  <div class="nav-links">
+    <a href="../#about">关于</a>
+    <a href="../#experience">实习</a>
+    <a href="../#projects">项目</a>
+    <a href="../#publications">成果</a>
+    <a href="../#contact" class="nav-cta">联系</a>
+  </div>
+</nav>
+
+<div class="project-detail">
+  <div class="project-detail-inner">
+    <a href="../#about" class="back-link">← 返回主页</a>
+
+    <div class="detail-badge">能力详情 · 关于我 · 视角 02</div>
+    <h1 class="detail-title serif">从系统视角：后端栈 + 微服务 + SDN</h1>
+    <p class="detail-desc reveal">
+      "系统视角"是我自我定位的核心 —— 一个完整的现代分布式系统由三个互相支撑的平面（plane）构成。本页按"<strong>数据面 / 服务面 / 控制面</strong>"三柱并立展开：<strong>A · 后端栈（Data Plane）</strong>按"内存缓存 → 消息中间件 → 流计算 → 批计算 → 数据库"五层组织"数据如何沉淀"；<strong>B · 微服务 + 服务通信（Service Plane）</strong>以 gRPC 为通信主线，串联注册中心、网关、熔断限流、链路追踪、分布式事务，组织"服务如何对话"；<strong>C · SDN 架构（Control Plane）</strong>按"北向 / 南向 / 东西向"三个接口组织"网络如何调度"。三块各自独立、又通过"<strong>集中决策 + 分布执行</strong>"的同构哲学互相印证 —— 这一哲学从微服务的注册中心、流批一体的 Schema Registry、到 SDN 控制器，无处不在。
+    </p>
+
+    <!-- ===================== Capability Mindmap ===================== -->
+    <div class="mindmap reveal">
+      <div class="mindmap-title">能力思维导图 · 数据面 + 服务面 + 控制面 三柱</div>
+      <div class="mindmap-wrap">
+        <svg viewBox="0 0 980 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="系统视角能力思维导图（三柱）">
+          <!-- Connection lines from root to three pillars -->
+          <g fill="none" stroke="#C9A96E" stroke-width="1.3" opacity="0.55">
+            <path d="M 490 100 V 132"/>
+            <path d="M 160 132 H 820"/>
+            <path d="M 160 132 V 158"/>
+            <path d="M 490 132 V 158"/>
+            <path d="M 820 132 V 158"/>
+          </g>
+          <!-- Root -->
+          <rect x="375" y="30" width="230" height="70" rx="12" fill="#C9A96E" opacity="0.92"/>
+          <text x="490" y="62" text-anchor="middle" fill="#0a0a0a" font-weight="700" font-size="17">系统视角</text>
+          <text x="490" y="82" text-anchor="middle" fill="#0a0a0a" font-size="11.5" opacity="0.75">集中决策 + 分布执行 · 同构哲学</text>
+
+          <!-- LEFT PILLAR: A · 后端栈 -->
+          <rect x="25" y="170" width="270" height="350" rx="12" fill="rgba(201,169,110,0.04)" stroke="#C9A96E" stroke-width="1.2"/>
+          <rect x="45" y="158" width="230" height="32" rx="16" fill="#0a0a0a" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="160" y="179" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="12.5">A · 后端栈（Data Plane）</text>
+          <text x="160" y="212" text-anchor="middle" fill="#d8d8d8" font-size="11.5" font-weight="600">数据如何沉淀</text>
+
+          <text x="42" y="244" fill="#C9A96E" font-size="11" font-weight="700">① 内存缓存</text>
+          <text x="42" y="262" fill="#a8a8a8" font-size="10.5">Redis ★</text>
+          <text x="42" y="278" fill="#888" font-size="10">vs Memcached / KeyDB / Dragonfly</text>
+
+          <text x="42" y="302" fill="#C9A96E" font-size="11" font-weight="700">② 消息中间件</text>
+          <text x="42" y="320" fill="#a8a8a8" font-size="10.5">Kafka ★ · RocketMQ ★</text>
+          <text x="42" y="336" fill="#888" font-size="10">vs RabbitMQ</text>
+
+          <text x="42" y="360" fill="#C9A96E" font-size="11" font-weight="700">③ 流计算引擎</text>
+          <text x="42" y="378" fill="#a8a8a8" font-size="10.5">Flink ★</text>
+          <text x="42" y="394" fill="#888" font-size="10">vs Spark Streaming · Kafka Streams</text>
+
+          <text x="42" y="418" fill="#C9A96E" font-size="11" font-weight="700">④ 批处理引擎</text>
+          <text x="42" y="436" fill="#a8a8a8" font-size="10.5">Spark ★</text>
+          <text x="42" y="452" fill="#888" font-size="10">vs MR / Trino / ClickHouse</text>
+
+          <text x="42" y="476" fill="#C9A96E" font-size="11" font-weight="700">⑤ 数据库</text>
+          <text x="42" y="494" fill="#a8a8a8" font-size="10.5">Milvus ★（向量）· Neo4j ★（图）</text>
+          <text x="42" y="510" fill="#888" font-size="10">vs MySQL · NoSQL · 多模并存</text>
+
+          <!-- MIDDLE PILLAR: B · 微服务 -->
+          <rect x="355" y="170" width="270" height="350" rx="12" fill="rgba(201,169,110,0.04)" stroke="#C9A96E" stroke-width="1.2"/>
+          <rect x="375" y="158" width="230" height="32" rx="16" fill="#0a0a0a" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="490" y="179" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="12.5">B · 微服务（Service Plane）</text>
+          <text x="490" y="212" text-anchor="middle" fill="#d8d8d8" font-size="11.5" font-weight="600">服务如何对话</text>
+
+          <text x="372" y="244" fill="#C9A96E" font-size="11" font-weight="700">① 服务通信</text>
+          <text x="372" y="262" fill="#a8a8a8" font-size="10.5">gRPC ★（HTTP/2 + Protobuf）</text>
+          <text x="372" y="278" fill="#888" font-size="10">vs REST · GraphQL · Thrift · Dubbo</text>
+
+          <text x="372" y="302" fill="#C9A96E" font-size="11" font-weight="700">② 注册中心 + 配置</text>
+          <text x="372" y="320" fill="#a8a8a8" font-size="10.5">Nacos ★（统一注册 + 配置）</text>
+          <text x="372" y="336" fill="#888" font-size="10">vs Consul · etcd · Eureka · ZK</text>
+
+          <text x="372" y="360" fill="#C9A96E" font-size="11" font-weight="700">③ 熔断限流</text>
+          <text x="372" y="378" fill="#a8a8a8" font-size="10.5">Sentinel ★</text>
+          <text x="372" y="394" fill="#888" font-size="10">vs Hystrix · Resilience4j</text>
+
+          <text x="372" y="418" fill="#C9A96E" font-size="11" font-weight="700">④ 链路追踪</text>
+          <text x="372" y="436" fill="#a8a8a8" font-size="10.5">OpenTelemetry ★</text>
+          <text x="372" y="452" fill="#888" font-size="10">vs SkyWalking · Jaeger · Zipkin</text>
+
+          <text x="372" y="476" fill="#C9A96E" font-size="11" font-weight="700">⑤ 分布式事务 + ⑥ Mesh 演进</text>
+          <text x="372" y="494" fill="#a8a8a8" font-size="10.5">RocketMQ 事务消息 ★ · Seata</text>
+          <text x="372" y="510" fill="#888" font-size="10">单体 → 微服务 → Istio → Serverless</text>
+
+          <!-- RIGHT PILLAR: C · SDN -->
+          <rect x="685" y="170" width="270" height="350" rx="12" fill="rgba(201,169,110,0.04)" stroke="#C9A96E" stroke-width="1.2"/>
+          <rect x="705" y="158" width="230" height="32" rx="16" fill="#0a0a0a" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="820" y="179" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="12.5">C · SDN 架构（Control Plane）</text>
+          <text x="820" y="212" text-anchor="middle" fill="#d8d8d8" font-size="11.5" font-weight="600">网络如何调度</text>
+
+          <text x="702" y="244" fill="#C9A96E" font-size="11" font-weight="700">↑ 北向 Northbound</text>
+          <text x="702" y="262" fill="#a8a8a8" font-size="10.5">REST · NETCONF + YANG</text>
+          <text x="702" y="278" fill="#a8a8a8" font-size="10.5">意图驱动（IBN）</text>
+          <text x="702" y="294" fill="#888" font-size="10">★ 5G 意图驱动配置即此层</text>
+
+          <text x="702" y="320" fill="#C9A96E" font-size="11" font-weight="700">↓ 南向 Southbound</text>
+          <text x="702" y="338" fill="#a8a8a8" font-size="10.5">OpenFlow · P4 · gNMI</text>
+          <text x="702" y="354" fill="#a8a8a8" font-size="10.5">OVSDB · NETCONF</text>
+          <text x="702" y="370" fill="#888" font-size="10">Match-Action 流表下发</text>
+
+          <text x="702" y="396" fill="#C9A96E" font-size="11" font-weight="700">↔ 东西向 East-West</text>
+          <text x="702" y="414" fill="#a8a8a8" font-size="10.5">联邦 · 层级 · Raft 集群</text>
+          <text x="702" y="430" fill="#a8a8a8" font-size="10.5">SDNi · 跨域协同</text>
+          <text x="702" y="446" fill="#888" font-size="10">★ 卫星 SDN 多控制器关键</text>
+
+          <text x="702" y="478" fill="#C9A96E" font-size="11" font-weight="700">控制器实现</text>
+          <text x="702" y="496" fill="#a8a8a8" font-size="10.5">ONOS · OpenDaylight</text>
+          <text x="702" y="512" fill="#888" font-size="10">Ryu · Floodlight · 商用方案</text>
+        </svg>
+      </div>
+      <div class="mindmap-caption">★ = 项目实战过的组件 ▸ 三柱皆贯彻「集中决策 + 分布执行」的同构哲学 —— 注册中心之于微服务、Schema Registry 之于数据栈、SDN Controller 之于网络，本质一脉相承</div>
+    </div>
+
+    <!-- ===================== PART A: Backend Stack (Data Plane) ===================== -->
+    <section class="detail-layer reveal" id="layer-1">
+      <h2 class="detail-layer-title">A · 后端栈（Data Plane） —— 数据沿系统流动的五层</h2>
+
+      <!-- ===== 1. Redis ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">内存缓存层 · 典型：Redis</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>Redis 是"数据落到磁盘之前的最后一道高速缓冲"。其核心定位是<strong>用纯内存换吞吐</strong>，单实例可支撑 10w+ QPS，并通过单线程事件循环避免锁开销。在我做 <a href="../projects/agent-ops.html">电商秒杀项目</a> 时，秒杀库存的扣减与排队全部走 Redis 原子操作（DECR / Lua），把数据库压力降低两个数量级。</div>
+          <div class="detail-arch-item"><strong>核心特性：</strong>
+            <br/>• <strong>多数据结构</strong>：String / List / Hash / Set / ZSet / Stream / Bitmap / HyperLogLog —— 远超"K-V"概念。
+            <br/>• <strong>单线程处理 + 多路 IO 复用</strong>：避免锁开销，可预测延迟（&lt;1ms P99）。
+            <br/>• <strong>持久化</strong>：RDB 快照 + AOF 增量日志，可配置 every-second / always 两种 fsync 策略。
+            <br/>• <strong>高可用</strong>：Sentinel 哨兵主从切换 + Cluster 分片（16384 slot）。
+            <br/>• <strong>Pub/Sub + Stream</strong>：Redis Stream（5.0+）已可作为轻量消息队列使用。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Memcached：</strong>Memcached 只有简单 K-V、多线程模型、无持久化。在 2010 年前是 Web 缓存事实标准；今天 Redis 已经全面替代它，仅在"超大并发的纯字符串热点缓存"场景下 Memcached 仍有 marginal 优势。</div>
+          <div class="detail-arch-item"><strong>对比 KeyDB / Dragonfly：</strong>KeyDB 把 Redis 多线程化，Dragonfly 用 io_uring + 现代内存分配器重写。在多核机器上吞吐可达 Redis 的 5–25 倍，但生态成熟度尚不及 Redis。在我看来，2025 年还是 Redis 的天下，但 3–5 年内 Dragonfly 这类"现代化重写"可能蚕食主流市场。</div>
+          <div class="detail-arch-item"><strong>常见误用与正解：</strong>
+            <br/>• ❌ 把 Redis 当"持久数据库"用（断电丢数据）→ ✅ 持久化只是降级保险，权威数据始终落在 MySQL / Postgres。
+            <br/>• ❌ 大 Key（一个 Hash 装 100w 条）→ ✅ 拆分 Key，单 Key 控制在 10KB 以内、单结构元素控制在 5000 以内。
+            <br/>• ❌ KEYS * 扫库 → ✅ SCAN 游标 + match pattern。
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 2. Kafka ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">消息中间件层 · 典型：Apache Kafka</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>Kafka 不是"消息队列"，是"分布式提交日志（Distributed Commit Log）"。它把消息看作不可变事件序列，Topic 按 Partition 切分，每个 Partition 是顺序追加的 Append-Only 文件。消费者通过 offset 标记进度，天然支持"从任意时点重放"。在 <a href="../projects/experience-huawei.html">华为 6G 实习</a> 期间，我深入学习并实践了 Kafka + KRaft + Flink + Iceberg/Delta Lake 流批一体栈，并在公司内部开源了 KRaft 协议的 Wireshark 分析插件。</div>
+          <div class="detail-arch-item"><strong>核心特性：</strong>
+            <br/>• <strong>分区与副本</strong>：Topic→Partition→Segment 三层结构；每个 Partition 多副本（ISR 机制）保障 HA。
+            <br/>• <strong>顺序写 + 零拷贝</strong>：磁盘顺序写性能逼近内存随机写；通过 sendfile 系统调用实现零拷贝消费。
+            <br/>• <strong>消费者组（Consumer Group）</strong>：Partition 在组内独占消费，组间广播，天然支持"工作队列 + 发布订阅"两种语义。
+            <br/>• <strong>KRaft（从 3.3 起 GA）</strong>：用 Raft 替代 ZooKeeper 作为元数据协调，部署从"两套集群"简化为"一套集群"。
+            <br/>• <strong>幂等 Producer + 事务</strong>：从 0.11 起支持 Exactly-Once Semantics。
+          </div>
+          <div class="detail-arch-item"><strong>对比 RocketMQ（阿里开源）：</strong>RocketMQ 在协议设计上对"业务消息队列"的支持更友好 —— 原生支持<strong>顺序消息、事务消息（两阶段提交回查机制）、延迟消息（18 级延迟队列）、消息过滤（Tag/SQL92）</strong>。Kafka 走"日志通用引擎"路线，RocketMQ 走"业务消息中间件"路线。在 <a href="../projects/agent-ops.html">电商秒杀项目</a> 中我选 RocketMQ 而非 Kafka，原因正是其事务消息能优雅解决"扣库存 + 发订单消息"的最终一致性。</div>
+          <div class="detail-arch-item"><strong>对比 RabbitMQ：</strong>RabbitMQ 是 AMQP 协议的工业级实现，强项是<strong>复杂路由</strong>（Direct / Topic / Fanout / Headers Exchange）和"轻量、低延迟、消息可靠送达"。劣势是单队列吞吐天花板低（1w–5w/s），不擅长堆积场景。我的心智模型：RabbitMQ 是"邮局" —— 信件要按地址精确投递；Kafka / RocketMQ 是"报刊亭" —— 文章被发布到 Topic，订阅者按订阅拉取。</div>
+          <div class="detail-arch-item"><strong>三者选型矩阵：</strong>
+            <br/>• <strong>日志/流处理 / 大吞吐 / 重放</strong> → Kafka
+            <br/>• <strong>业务消息 / 事务一致性 / 顺序消息</strong> → RocketMQ
+            <br/>• <strong>复杂路由 / 工作任务分发 / 跨语言互操作</strong> → RabbitMQ
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 3. Flink ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">流计算引擎层 · 典型：Apache Flink</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>Flink 把"批"视为"有界流（Bounded Stream）"，把"流"视为"无界流（Unbounded Stream）"，把两者统一在同一套 DataStream / Table API 之下。它是当前工业界"真流处理"的事实标准 —— 真流的关键判据是<strong>事件时间语义、状态后端、精确一次（Exactly-Once）</strong>三件套是否齐全。</div>
+          <div class="detail-arch-item"><strong>核心特性：</strong>
+            <br/>• <strong>事件时间 + Watermark</strong>：基于事件自带时间戳处理乱序数据；Watermark 标记"小于此时间的事件已到齐"。
+            <br/>• <strong>状态后端</strong>：算子状态（Operator State）+ 键控状态（Keyed State），存储在 RocksDB 或堆内存，支持 TB 级状态。
+            <br/>• <strong>Checkpoint / Savepoint</strong>：基于 Chandy-Lamport 分布式快照算法，实现端到端 Exactly-Once。
+            <br/>• <strong>窗口机制</strong>：Tumbling / Sliding / Session / Global，覆盖几乎所有窗口语义需求。
+            <br/>• <strong>CEP 复杂事件处理</strong>：原生支持模式匹配（"先 A 再 B 间隔 5 分钟内 C"），适合风控、网络异常检测。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Spark Streaming / Structured Streaming：</strong>Spark Streaming 早期是<strong>微批（Micro-Batch）</strong>模式 —— 每 0.5–10s 把数据切成小批跑一次 RDD 任务，延迟下限较高（百毫秒级）。Structured Streaming（连续处理模式）虽然降低了延迟，但状态后端、Watermark、CEP 等能力相比 Flink 仍有差距。结论：批为主、流为辅的湖仓场景选 Spark；流为主、状态重的场景选 Flink。</div>
+          <div class="detail-arch-item"><strong>对比 Kafka Streams：</strong>Kafka Streams 是 Kafka 自带的"客户端库式"流处理（不依赖独立集群，跑在应用 JVM 内）。优势是部署轻量、与 Kafka 生态零摩擦；劣势是计算能力受限于客户端 JVM，做不了大状态、做不了与外部数据库的复杂 join、不擅长跨 Topic 的全局聚合。</div>
+          <div class="detail-arch-item"><strong>对比 Apache Storm：</strong>Storm 是"上一代真流处理"代表，At-least-once / Tuple-by-Tuple 计算模型；今天已基本被 Flink 替代，仅在历史遗留系统中存在。</div>
+          <div class="detail-arch-item"><strong>个人理解：</strong>"批是流的特例"是 Flink 的哲学胜利 —— 它从根本上消除了"两套代码两套引擎"的运维割裂。但代价是 API 表面积庞大、学习曲线陡峭、状态后端调参经验门槛高。在我看来，Flink 是"专业团队的武器"，Spark Streaming 则是"通用团队的兜底"。</div>
+        </div>
+      </div>
+
+      <!-- ===== 4. Spark ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">批处理引擎层 · 典型：Apache Spark</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>Spark 是当前批计算的事实标准。其灵魂是<strong>基于内存的 DAG 执行引擎</strong>：每个作业被编译成有向无环图（RDD lineage），按宽窄依赖（narrow / wide dependency）划分 Stage，Stage 内部流水线执行、Stage 之间通过 Shuffle 衔接。相比 MapReduce 的"每步落盘"，Spark 的内存复用是其 10–100 倍性能提升的根因。</div>
+          <div class="detail-arch-item"><strong>核心组件：</strong>
+            <br/>• <strong>Spark Core / RDD</strong>：底层数据抽象与调度器。
+            <br/>• <strong>Spark SQL / DataFrame / Dataset</strong>：结构化数据处理 + Catalyst 优化器（基于规则 + 基于成本）+ Tungsten 执行引擎（堆外内存 + 代码生成）。
+            <br/>• <strong>Spark MLlib</strong>：分布式机器学习算法库。
+            <br/>• <strong>GraphX</strong>：分布式图计算（Pregel 模型）。
+            <br/>• <strong>Structured Streaming</strong>：基于 DataFrame 的流处理 API（既支持微批也支持连续处理）。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Hadoop MapReduce：</strong>MR 是"每步落盘"模型，适合 PB 级超大数据集的最稳健兜底；Spark 是"内存优先"模型，适合 TB 级以下的快速迭代。今天的湖仓场景几乎全部走 Spark，MR 主要存在于历史 ETL 链路。</div>
+          <div class="detail-arch-item"><strong>对比 Presto / Trino：</strong>Trino 走"低延迟交互式查询"路线（MPP 引擎，全内存，秒级响应），不做长时间 ETL。心智模型：Spark 适合做"小时级 ETL + 报表"，Trino 适合做"秒级 BI 查询"。两者常并存（Spark 写表，Trino 查表）。</div>
+          <div class="detail-arch-item"><strong>对比 Apache Doris / ClickHouse / StarRocks：</strong>这一档是"OLAP 数据库"而非"通用批处理引擎"，强项是亚秒级聚合查询。但它们做不了复杂 UDF / 机器学习 / 图计算 —— Spark 仍是通用批处理唯一选项。</div>
+          <div class="detail-arch-item"><strong>湖仓融合趋势：</strong>Spark + Iceberg / Delta Lake / Hudi 的组合是当下流批一体湖仓的事实标准。我在 <a href="../projects/experience-huawei.html">华为 6G 实习</a> 中的"通感数据流批一体架构"研究正是建立在这套技术栈之上：实时业务通过 Kafka + Flink 完成质量监控与告警，离线业务基于 Iceberg / Delta Lake 快照 + Spark 做模型评估和训练样本构建，两条路径共享同一份底层存储与数据语义。</div>
+        </div>
+      </div>
+
+      <!-- ===== 5. Milvus / Database family ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">数据库层 · 典型：Milvus（向量数据库视角）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>Milvus 是面向 Embedding 检索的开源分布式向量数据库。在 LLM 时代，"语义检索"成为继"关系查询"之后的第二种基本检索原语，Milvus（以及 Pinecone / Weaviate / Qdrant）是该原语的工业级实现。我在 <a href="../projects/agent-ops.html">Agent 运维项目</a> 中用 Milvus 存储 Runbook 知识库，每次告警触发后基于语义相似度从知识库召回 top-k 处置建议。</div>
+          <div class="detail-arch-item"><strong>核心特性：</strong>
+            <br/>• <strong>近似最近邻索引（ANN）</strong>：HNSW（图索引，召回率高、内存大）、IVF_FLAT / IVF_PQ（倒排聚类索引，平衡型）、DiskANN（磁盘索引，超大规模）。
+            <br/>• <strong>云原生分布式</strong>：存算分离、按计算节点 / 查询节点 / 数据节点 / 索引节点解耦扩缩容。
+            <br/>• <strong>标量 + 向量混合查询</strong>：先按 metadata 过滤（user_id = 'X' AND time &gt; '2025-01'），再向量检索。
+            <br/>• <strong>多副本 + 一致性级别</strong>：Strong / Bounded / Eventually，可在延迟与一致性间权衡。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">数据库四大家族横向对比</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>① 关系型数据库 · MySQL（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：行式存储，强 Schema，支持完整 SQL + ACID 事务（InnoDB 引擎下默认 RR 隔离级别）。
+            <br/>• <strong>核心特性</strong>：B+ 树主键索引、二级索引、外键、多版本并发控制（MVCC）、Binlog。
+            <br/>• <strong>适用场景</strong>：交易系统、订单、用户账户、库存等"强一致 + 强 schema"场景。
+            <br/>• <strong>主流变体</strong>：PostgreSQL（更强的 SQL 标准合规 + JSONB + 扩展生态）、TiDB / OceanBase（HTAP 分布式 SQL）。
+          </div>
+          <div class="detail-arch-item"><strong>② 向量数据库 · Milvus（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：高维向量（768 / 1024 / 1536 维）+ 标量 metadata。
+            <br/>• <strong>核心检索</strong>：基于距离度量（cosine / L2 / inner product）的近似最近邻搜索。
+            <br/>• <strong>适用场景</strong>：RAG（Retrieval-Augmented Generation）、语义搜索、推荐召回、图片相似检索。
+            <br/>• <strong>主流变体</strong>：Pinecone（SaaS 化）、Weaviate（带知识图谱）、Qdrant（Rust 实现、轻量）、Chroma（嵌入式、单机）。Postgres 的 pgvector 插件也是务实选择。
+          </div>
+          <div class="detail-arch-item"><strong>③ 图数据库 · Neo4j（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：节点 + 边 + 属性，强调"关系是一等公民"。
+            <br/>• <strong>核心查询语言</strong>：Cypher（OpenCypher 标准），强项是多跳遍历（MATCH (a)-[:FRIEND*2..4]-(b)）。
+            <br/>• <strong>适用场景</strong>：知识图谱、社交网络、风控反欺诈、推荐系统中的"关系挖掘"。
+            <br/>• <strong>主流变体</strong>：JanusGraph（基于 HBase/Cassandra 的分布式图）、Nebula Graph（国产，分布式图）、TigerGraph（商业、高性能）、ArangoDB（多模融合）。
+            <br/>• <strong>个人实践</strong>：在 <a href="../projects/5g-intent.html">5G 意图驱动配置项目</a> 中用 Neo4j 存储 5,333 条配置命令的功能 / 参数引用关系图，再用 GraphSAGE 做图卷积学习节点嵌入。
+          </div>
+          <div class="detail-arch-item"><strong>④ NoSQL 文档/列族/KV · MongoDB / Cassandra / DynamoDB：</strong>
+            <br/>• <strong>MongoDB（文档型）</strong>：BSON 文档，灵活 Schema，适合"内容形态多变"的业务（CMS、用户画像、日志）。
+            <br/>• <strong>Cassandra / ScyllaDB（宽列族）</strong>：基于 Dynamo 论文，无主多副本，最终一致性，写入吞吐极高（百万/秒级），适合时序、IoT、监控指标。
+            <br/>• <strong>DynamoDB / TiKV / FoundationDB（KV）</strong>：最简单的数据模型，配合外部索引服务可扩展为通用存储基座。
+            <br/>• <strong>共同点</strong>：牺牲 SQL 表达力与强一致性，换水平扩展性与写入吞吐。
+          </div>
+          <div class="detail-arch-item"><strong>选型心智模型：</strong>
+            <br/>• "我要做强一致的交易" → MySQL / Postgres
+            <br/>• "我要按语义找最像的东西" → Milvus / Qdrant
+            <br/>• "我要查多跳关系" → Neo4j / Nebula
+            <br/>• "我要存 PB 级 schemaless 时序" → Cassandra / ClickHouse
+            <br/>真实系统几乎都是<strong>多模并存</strong>：MySQL 存账务、Redis 存缓存、Milvus 存向量、Neo4j 存知识图谱、Kafka 当总线。把每个组件用在它最擅长的地方，才是"系统视角"的本质。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">小结：后端五层架构如何串起来</div>
+        <div class="detail-section-content">
+          一条典型数据生命线：用户请求 → <strong>Redis</strong> 拦截热点缓存 →（缓存未命中）→ <strong>MySQL</strong> 读写权威数据 → 业务事件投递到 <strong>Kafka / RocketMQ</strong> → <strong>Flink</strong> 实时聚合做监控告警 → 同时数据沉淀到 <strong>Iceberg / Delta Lake</strong> 数据湖 → <strong>Spark</strong> 凌晨跑 ETL 与训练样本 → 模型 embedding 写入 <strong>Milvus</strong> 供下次 RAG 召回。这五层不是孤立组件，而是同一份业务数据沿不同时空尺度流动的不同形态。我在华为 6G 实习与电商秒杀项目中接触并实践的，正是这条完整管道。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PART B: Microservice (Service Plane) ===================== -->
+    <section class="detail-layer reveal" id="layer-2">
+      <h2 class="detail-layer-title">B · 微服务 + 服务通信（Service Plane） —— 服务沿系统对话的六层</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">为什么"服务面"是后端栈与 SDN 之间不可缺少的一层</div>
+        <div class="detail-section-content">
+          后端栈解决"数据如何沉淀"，SDN 解决"网络如何调度"，但真正承载业务语义的"<strong>服务如何对话</strong>"在两者之间 —— 它是工程师 80% 工作时间的所在。一个秒杀订单从用户点击到最终落库，经过的不是"读写 Redis / Kafka"这种数据动作，而是"<strong>下单服务 → 库存服务 → 支付服务 → 通知服务</strong>"这种<strong>服务间的协议对话</strong>。服务面的每一个组件（gRPC / 注册中心 / 网关 / 熔断 / 链路追踪 / 分布式事务）都是为了让这场对话"可达、可靠、可观测、可回滚"。我在 <a href="../projects/agent-ops.html">电商秒杀 + Agent 自动运维</a> 项目中实际搭建并跑通了这套服务面 —— SpringBoot 业务服务 + Nacos 注册中心 + Sentinel 限流 + RocketMQ 事务消息 + Prometheus / Grafana 可观测，这一层因此不是"读来的架构图"，而是"调试过凌晨三点告警"的真实工程经验。
+        </div>
+      </div>
+
+      <!-- ===== 1. gRPC / 服务通信 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">服务通信协议 · 典型：gRPC</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>gRPC 是 Google 开源的现代 RPC 框架，基于 <strong>HTTP/2 + Protocol Buffers</strong>，是当前"高性能跨语言服务通信"的事实标准。Kubernetes、etcd、Envoy、TiKV、Istio、Dapr 的内部通信都构建在 gRPC 之上 —— 这意味着<strong>整个云原生生态的"神经系统"用的是 gRPC</strong>。</div>
+          <div class="detail-arch-item"><strong>核心机制：</strong>
+            <br/>• <strong>HTTP/2 传输</strong>：单连接多路复用（multiplexing）、头部压缩（HPACK）、服务器推送、二进制分帧 —— 相比 HTTP/1.1 的"每请求一连接 + 队头阻塞"，吞吐与延迟都提升一个量级。
+            <br/>• <strong>Protocol Buffers 编码</strong>：强 Schema、二进制紧凑（比 JSON 小 3-10 倍）、跨语言代码生成（C++ / Java / Go / Python / Rust / Node …）。
+            <br/>• <strong>IDL 驱动开发</strong>：先写 <code>.proto</code> 文件定义服务接口与消息结构，再由 <code>protoc</code> 编译生成各语言的 stub。客户端与服务端永远从同一份契约出发。
+            <br/>• <strong>四种调用模式</strong>：unary（一请求一响应）、server-streaming（一请求多响应）、client-streaming（多请求一响应）、bidirectional-streaming（双向流，类 WebSocket）。
+            <br/>• <strong>生态周边</strong>：gRPC-Web（浏览器直连）、gRPC-Gateway（gRPC ↔ REST 双向网关）、grpcurl（命令行调试）、buf（IDL 治理）。
+          </div>
+          <div class="detail-arch-item"><strong>对比 REST / OpenAPI：</strong>REST 的优势是<strong>人类友好</strong>（URL 即文档、curl 即客户端、浏览器直连）；gRPC 的优势是<strong>机器友好</strong>（强类型、紧凑、高吞吐）。心智模型：<strong>对外提供"开发者 API"用 REST，对内做"服务间调用"用 gRPC</strong>。两者并非互斥 —— gRPC-Gateway 可在同一服务上同时暴露两种协议。</div>
+          <div class="detail-arch-item"><strong>对比 GraphQL：</strong>GraphQL 解决的是"前端到 BFF 层的灵活查询"问题，让前端按需要的字段裁剪响应。它的"杀手锏"是聚合 N 个后端到一次查询，避免 over-fetching / under-fetching。但它不是服务间通信协议 —— 服务间的高频调用，GraphQL 的解析开销远高于 gRPC。<strong>GraphQL 与 gRPC 是互补关系</strong>：前端 ↔ BFF 用 GraphQL，BFF ↔ 后端服务用 gRPC。</div>
+          <div class="detail-arch-item"><strong>对比 Apache Thrift：</strong>Thrift 是 Facebook 早于 gRPC 推出的同类方案（IDL + 多语言 RPC）。设计上比 gRPC 更早成熟，但生态、文档、社区都被 gRPC 全面反超。今天 Thrift 主要存在于历史系统（Twitter / 早期字节跳动）。</div>
+          <div class="detail-arch-item"><strong>对比 Dubbo（阿里）：</strong>Dubbo 是阿里开源的 Java 系 RPC 框架，与 Spring Cloud 长期分庭抗礼。优势是与阿里中间件生态（Nacos / Sentinel / Seata / RocketMQ）深度整合，对中文用户文档完整。Dubbo 3.x 起原生支持 gRPC over HTTP/2（Triple 协议），逐步与 gRPC 融合。<strong>结论：纯 Java 单语言栈选 Dubbo，跨语言异构栈选 gRPC。</strong></div>
+          <div class="detail-arch-item"><strong>对比 JSON-RPC（MCP 即基于此）：</strong>JSON-RPC 是最轻量的 RPC 协议，纯 JSON 文本编码，无 IDL、无代码生成。<strong>MCP（Model Context Protocol）正是基于 JSON-RPC 2.0</strong>，因为 Agent 与工具的通信本来就是"低频、强动态、跨语言、调试优先"，gRPC 的强 Schema 反而成为负担。这是 RPC 选型的反直觉点：<strong>不是越"现代"越好，而是看通信频率与契约稳定性</strong>。</div>
+          <div class="detail-arch-item"><strong>个人理解：</strong>选 RPC 协议的本质是回答两个问题 —— ① 通信双方是否说同一种语言（影响 IDL vs 自由 schema 的选择）；② 通信频率是否高到需要为 0.1ms 拼命（影响 binary vs text 的选择）。gRPC 是"两个'是'"的最优解，REST 是"两个'否'"的最优解，GraphQL 是"前端聚合"的特化，JSON-RPC 是"Agent / 插件协议"的特化。没有银弹，只有匹配。</div>
+        </div>
+      </div>
+
+      <!-- ===== 2. 注册中心 + 配置中心 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">注册中心 + 配置中心 · 典型：Nacos</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>注册中心解决"<strong>动态服务发现</strong>"问题 —— 微服务实例在 K8s 下时刻起停，调用方不能再写死 IP:Port。Nacos 是阿里开源的"<strong>注册中心 + 配置中心 + 服务管理</strong>"三合一平台，是 Spring Cloud Alibaba 体系的默认基座。我在 <a href="../projects/agent-ops.html">电商秒杀项目</a> 中正是用 Nacos 同时承担服务注册发现与动态配置下发。</div>
+          <div class="detail-arch-item"><strong>核心特性：</strong>
+            <br/>• <strong>服务注册发现</strong>：服务启动时向 Nacos 注册自己的 IP:Port + metadata；消费者通过 Nacos 客户端订阅服务列表，本地负载均衡。
+            <br/>• <strong>配置中心</strong>：把配置（数据库连接、限流阈值、特征开关）从打包阶段移到运行时，支持 namespace / group / dataId 三级隔离，配置变更秒级推送到所有客户端。
+            <br/>• <strong>双数据模型</strong>：临时实例（心跳维持，K8s Pod 适用）+ 永久实例（持久注册，物理机适用）。
+            <br/>• <strong>一致性模型</strong>：AP（默认，Distro 协议）+ CP（Raft 协议）可切换。AP 用于服务发现（短暂不一致可容忍），CP 用于配置（强一致必要）。
+            <br/>• <strong>多协议适配</strong>：Java SDK / DNS / gRPC / Open API。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Consul（HashiCorp）：</strong>Consul 的核心卖点是<strong>多数据中心</strong>原生支持 + 强大的 KV 存储 + 健康检查机制。注册中心 + 配置 + DNS + 服务网格（Consul Connect）一体化。它在国外云原生生态中地位类似 Nacos 之于国内。劣势是 Web 控制台不如 Nacos 友好，且 1.10+ 起调整为 BSL 商业许可（非完全开源）。</div>
+          <div class="detail-arch-item"><strong>对比 etcd：</strong>etcd 是 CoreOS 开源的<strong>强一致 KV 存储</strong>（基于 Raft），是 Kubernetes 的"元数据数据库"。它本身不是注册中心，但常被作为底层存储 + 上层封装（如 Kubernetes Service Discovery）。优势是简单、强一致、性能极佳；劣势是没有注册中心需要的健康检查、订阅推送等高层语义，需要自己封装。</div>
+          <div class="detail-arch-item"><strong>对比 Eureka（Netflix）：</strong>Spring Cloud 第一代注册中心。AP 模型、Java only、自我保护机制（网络分区时不剔除实例）。Netflix 已于 2018 年宣布 Eureka 2.x 停止开发，社区演进缓慢。今天新项目不再选 Eureka。</div>
+          <div class="detail-arch-item"><strong>对比 ZooKeeper：</strong>Apache ZooKeeper 是分布式协调服务"老祖宗"，Hadoop / Kafka / Dubbo / HBase 都曾依赖。CP 模型（ZAB 协议）保证强一致。劣势是<strong>不擅长大量服务实例频繁上下线</strong>（写性能瓶颈），且没有现代化 Web 控制台。Kafka 已用 KRaft 摆脱 ZK，Dubbo 推荐迁移到 Nacos。ZooKeeper 仍在"配置协调、分布式锁、Master 选举"等"低频强一致"场景活跃。</div>
+          <div class="detail-arch-item"><strong>选型心智：</strong>
+            <br/>• 国内 Spring Cloud / Java 栈 → Nacos
+            <br/>• 多云多 DC + 跨语言 → Consul
+            <br/>• K8s 原生（已有 etcd）→ 直接用 Kubernetes Service / EndpointSlice
+            <br/>• 历史包袱（已有 ZK）→ ZooKeeper 续命，新业务用 Nacos
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 3. 服务网关 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">服务网关 · 典型：Spring Cloud Gateway / Higress</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>网关是<strong>所有外部请求进入微服务系统的统一入口</strong>，承担"鉴权 / 限流 / 路由 / 协议转换 / 灰度发布 / 安全防护"六件事。心智模型：网关之于微服务 = 国门之于国家 —— 一切对外协议、合规、配额都在这一层强制收敛。</div>
+          <div class="detail-arch-item"><strong>Spring Cloud Gateway（Java 系主线）：</strong>Spring 生态的官方网关，基于 <strong>Spring WebFlux + Reactor 响应式编程模型</strong>。优势是与 Spring Cloud 生态零摩擦（Eureka / Nacos / Sentinel 即插即用），路由配置走 application.yml，开发心智门槛低。劣势是基于 JVM，冷启动慢、内存开销大。</div>
+          <div class="detail-arch-item"><strong>Higress（阿里开源 · 云原生主线）：</strong>基于 <strong>Envoy + Istio</strong> 的下一代网关，覆盖"传统网关 + Ingress + AI Gateway"三种角色。优势是数据面继承 Envoy 的高性能（C++ 实现，亚毫秒延迟），控制面基于 Istio 标准化。这与我在 <a href="../capabilities/agent.html">Agent 视角的 Gateway 层</a> 中讨论的"Higress AI Gateway"是同一套基础设施 —— 业务网关与 AI 网关在同一引擎上收敛，这是 Higress 的差异化定位。</div>
+          <div class="detail-arch-item"><strong>对比 Kong（Lua / OpenResty）：</strong>Kong 基于 Nginx + OpenResty（Lua 脚本扩展），插件化生态成熟，企业版功能完备。劣势是 Lua 自定义插件门槛较高，对 K8s 原生支持不如 Higress / Envoy 系顺畅。</div>
+          <div class="detail-arch-item"><strong>对比 Apache APISIX：</strong>同样基于 OpenResty 但工程化更现代，配置存于 etcd 支持热加载，性能领先 Kong。国内场景活跃度高，是 Kong 的有力替代。</div>
+          <div class="detail-arch-item"><strong>对比 Zuul（Netflix）：</strong>Spring Cloud 第一代网关，阻塞 IO，性能瓶颈明显。Zuul 2.x 转向 Netty 非阻塞但已被 Spring Cloud Gateway 取代。新项目不选。</div>
+          <div class="detail-arch-item"><strong>对比 Traefik：</strong>Go 实现的云原生网关，自动服务发现（Docker / K8s / Consul），配置即代码。在容器化 / Serverless 场景下非常流行，劣势是企业级功能（精细鉴权 / 限流策略）相对 Kong 简单。</div>
+          <div class="detail-arch-item"><strong>选型心智：</strong>Java 业务栈 → Spring Cloud Gateway；云原生 K8s → Higress / Envoy；多协议 / 插件极重 → Kong / APISIX；Go 微服务 + 自动发现 → Traefik。</div>
+        </div>
+      </div>
+
+      <!-- ===== 4. 熔断限流 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">熔断限流 + 容错 · 典型：Sentinel</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>熔断限流是分布式系统的"<strong>免疫系统</strong>" —— 单点故障不能传染整个系统。三个核心机制：① <strong>限流</strong>（Rate Limiting）控制入口流量；② <strong>熔断</strong>（Circuit Breaker）当下游持续失败时快速失败，避免线程池耗尽；③ <strong>降级</strong>（Fallback）当主链路故障时切到兜底逻辑。我在 <a href="../projects/agent-ops.html">电商秒杀项目</a> 中正是用 Sentinel 守住秒杀入口的 QPS，防止瞬时洪峰击穿下游服务。</div>
+          <div class="detail-arch-item"><strong>Sentinel（阿里开源 · 主线）：</strong>核心抽象是"<strong>资源 + 规则</strong>" —— 任何能被切面拦截的代码块都是资源（HTTP 接口、RPC 方法、SQL 查询、自定义代码段），规则可在运行时动态推送。
+            <br/>• <strong>限流算法</strong>：滑动窗口 / 令牌桶 / 漏桶 / 预热（warm-up，避免冷启动击穿）。
+            <br/>• <strong>熔断策略</strong>：慢调用比例 / 异常比例 / 异常数三种触发条件，半开探测自动恢复。
+            <br/>• <strong>系统自适应保护</strong>：基于 Load / CPU / RT / 入口 QPS 综合判断，自动反向限流。
+            <br/>• <strong>规则推送</strong>：通过 Nacos / Apollo / ZK 动态下发，无需重启服务。
+            <br/>• <strong>控制台</strong>：实时监控 QPS / RT / 异常数、动态调整规则、查看链路统计。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Hystrix（Netflix）：</strong>Java 系熔断器开山鼻祖，"舱壁隔离"模式经典 —— 为每个下游分配独立线程池，单点故障不会耗尽全局线程。Netflix 已于 2018 年宣布停止维护。Hystrix 的线程池隔离虽然安全，但上下文切换开销大，新项目不再选用。</div>
+          <div class="detail-arch-item"><strong>对比 Resilience4j：</strong>Hystrix 的官方推荐替代品，函数式编程风格，基于 Java 8 装饰器模式。模块化（CircuitBreaker / RateLimiter / Retry / Bulkhead / TimeLimiter 各自独立），适合"按需引入"。在 Spring Boot 2.x+ 生态中是 Sentinel 之外的主流选项。</div>
+          <div class="detail-arch-item"><strong>对比 Polly（.NET）：</strong>.NET 生态的同类方案，API 设计优雅，已成为 .NET 微服务的事实标准。</div>
+          <div class="detail-arch-item"><strong>个人理解：</strong>熔断限流的"难点"不在算法，而在<strong>阈值的选择与运行时调整</strong>。秒杀场景下我曾遇到过的真实问题：限流阈值设得偏高时下游被打垮，设得偏低时正常用户被误杀。Sentinel 的"动态规则推送 + 控制台实时调整"是解决这个问题的关键工程能力。这也是为什么这一层不是"代码层面的库"，而必须是"<strong>有控制台 + 有可观测</strong>"的平台。</div>
+        </div>
+      </div>
+
+      <!-- ===== 5. 链路追踪 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">链路追踪 + 可观测 · 典型：OpenTelemetry</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>微服务的根本痛点之一是"<strong>请求被拆碎了，故障定位无从下手</strong>" —— 一次下单可能横穿 20 个服务，任何一环延迟飙升都会被用户感知，但工程师不知道是哪一环。链路追踪通过 <strong>Trace ID + Span 树</strong>把一次请求串联起来，时间线一目了然。可观测性的三大支柱是 <strong>Logs（日志）+ Metrics（指标）+ Traces（链路）</strong>，链路是最难也最值钱的一柱。</div>
+          <div class="detail-arch-item"><strong>OpenTelemetry（CNCF 标准 · 主线）：</strong>由 OpenTracing 与 OpenCensus 合并而来，<strong>云原生时代可观测性的事实标准</strong>。它定义了一整套与厂商无关的 SDK + Collector + 协议（OTLP），让"埋点一次、后端任选"成为可能 —— 同一份 trace 可以同时送到 Jaeger / Zipkin / Tempo / Datadog / 阿里云 ARMS。
+            <br/>• <strong>SDK</strong>：覆盖 Java / Go / Python / Node / Rust / .NET 等 11 种语言。
+            <br/>• <strong>Collector</strong>：独立进程，接收 → 处理（采样、过滤、富化）→ 导出，与业务进程解耦。
+            <br/>• <strong>三大信号</strong>：Traces / Metrics / Logs 在同一份 SDK 内统一表达，相互引用。
+            <br/>• <strong>自动注入</strong>：Java Agent / eBPF 等机制实现"零代码改动埋点"。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Apache SkyWalking（国内主线）：</strong>华人主导的 APM 开源项目，CNCF 毕业。强项是"<strong>开箱即用</strong>" —— 内置完整 UI、存储、告警、拓扑发现，不需要拼装多个组件。Java Agent 字节码织入完全无侵入。在国内中小团队的接受度极高。</div>
+          <div class="detail-arch-item"><strong>对比 Jaeger（Uber 开源）：</strong>专注于分布式追踪（不做 Metrics / Logs），CNCF 毕业，云原生场景下的"专业 trace 后端"。OpenTelemetry SDK 可直接送 trace 到 Jaeger。</div>
+          <div class="detail-arch-item"><strong>对比 Zipkin（Twitter 开源）：</strong>Trace 系统的"老前辈"，2012 年开源，Google Dapper 论文的开源实现。轻量、稳定，但生态发展速度被 Jaeger / SkyWalking 超过。</div>
+          <div class="detail-arch-item"><strong>对比 Prometheus + Grafana：</strong>Prometheus 是 Metrics 维度的事实标准（拉模式 + PromQL），与 OpenTelemetry / SkyWalking 互补：前者管"指标的时序数据"，后者管"请求的链路因果"。我在 <a href="../projects/agent-ops.html">电商秒杀项目</a> 中正是 Prometheus + Alertmanager + Grafana 组合采集告警，下一步演进路径是引入 OpenTelemetry 把链路追踪也串起来。</div>
+          <div class="detail-arch-item"><strong>趋势观察：</strong>"<strong>可观测性 2.0</strong>"主张以 OpenTelemetry 为统一协议层，把 Logs / Metrics / Traces / Profiles 在 Collector 这一层归一，避免"四套埋点四套后端"的烟囱式架构。这也是云原生工程师近 2 年最值得跟进的演进。</div>
+        </div>
+      </div>
+
+      <!-- ===== 6. 分布式事务 + 演进 ===== -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">分布式事务 + 范式演进 · 典型：RocketMQ 事务消息</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>单体应用里 <code>BEGIN ... COMMIT</code> 一行解决的"事务一致性"，到了微服务变成<strong>跨服务、跨数据库的协调难题</strong>。秒杀场景的典型问题：扣库存（订单库）+ 发奖券（营销库）+ 加积分（用户库），任一失败需要全局回滚。分布式事务方案的本质是"<strong>放弃强一致 ACID，换取最终一致性 + 可补偿</strong>"。</div>
+          <div class="detail-arch-item"><strong>RocketMQ 事务消息（主线）：</strong>阿里独创的"<strong>本地事务 + 半事务消息 + 状态回查</strong>"三步法。
+            <br/>① Producer 向 RocketMQ 发送"半消息"（对消费者不可见）；
+            <br/>② Producer 执行本地事务（扣库存）；
+            <br/>③ 本地事务成功 → 提交消息（消费者可见）；失败 → 回滚消息（删除）；
+            <br/>④ 若 Producer 在 ②③ 之间宕机 → RocketMQ 主动回查 Producer 的事务状态。
+            <br/>这是工程上最优雅的方案 —— <strong>把"分布式事务"退化为"本地事务 + 可靠消息"</strong>，避免了 2PC 的协调开销与单点。这正是我在 <a href="../projects/agent-ops.html">电商秒杀项目</a> 中处理"扣库存 + 发订单消息"一致性的选型。
+          </div>
+          <div class="detail-arch-item"><strong>对比 Seata（阿里开源 · 通用框架）：</strong>Seata 覆盖四种事务模式 —— AT（自动补偿，最常用）、TCC（手写 Try-Confirm-Cancel）、Saga（长事务编排）、XA（两阶段提交）。优势是"<strong>一站式</strong>"覆盖各种场景，劣势是引入 TC（Transaction Coordinator）单独组件，运维复杂度增加。</div>
+          <div class="detail-arch-item"><strong>对比 2PC / 3PC：</strong>经典学术方案。2PC 的"prepare → commit"两阶段保证强一致，但<strong>协调者单点故障 + 同步阻塞</strong>使其不适合高并发场景。XA 是 2PC 的标准协议接口，仅在传统金融核心系统残存。</div>
+          <div class="detail-arch-item"><strong>对比 TCC（Try-Confirm-Cancel）：</strong>业务侧手动实现三个方法，把锁粒度从数据库行降到业务资源（如"预占库存 100"）。性能高，但侵入性强，每个业务都要写 3 倍代码。</div>
+          <div class="detail-arch-item"><strong>对比 Saga：</strong>把长事务拆成多个本地事务，每步都有对应补偿动作。适合"长流程业务"（订单 → 仓配 → 物流 → 签收），失败时反向执行补偿链。但"业务最终一致 ≠ 任意时刻可读" —— 中间态可能被用户看到，业务上需要做"中间态可见性"设计。</div>
+          <div class="detail-arch-item"><strong>对比 本地消息表：</strong>不引入 MQ 事务消息的简化版 —— 业务表 + 消息表在同一个本地事务里写入，独立调度器扫描消息表 + 重试发送。优势是不依赖中间件特性，劣势是要自己实现调度 + 重试。</div>
+        </div>
+
+        <div class="detail-arch" style="margin-top:24px">
+          <div class="detail-arch-item"><strong>范式演进 · 单体 → 微服务 → Service Mesh → Serverless：</strong>
+            <br/>① <strong>单体（Monolith）</strong>：所有逻辑一个进程一个数据库，开发简单但部署粒度粗、技术栈受限、规模有上限。
+            <br/>② <strong>SOA / 微服务</strong>：按业务边界拆分独立部署，技术栈解耦、独立扩缩容。代价是引入了上面所有 6 层基础设施。
+            <br/>③ <strong>Service Mesh（Istio / Linkerd）</strong>：把"服务通信、熔断、限流、追踪、安全"等"<strong>横切关注点</strong>"从业务进程剥离到旁边的 Sidecar 代理（Envoy）。业务代码不再 import Sentinel SDK，治理能力下沉到数据面 Sidecar + 控制面 Istio。<strong>本质是"控制-数据分离"在微服务领域的再现</strong>，与 SDN 同构。
+            <br/>④ <strong>Serverless / FaaS</strong>：连"服务"本身都消失了，只剩"<strong>函数 + 触发器</strong>"。基础设施按调用次数计费，弹性极致。适合事件驱动 / 间歇负载，不适合长连接 / 强一致场景。
+            <br/>这条演进路径并非"后浪推前浪式的替换"，而是"按业务复杂度分层共存" —— 一个真实系统往往同时存在单体（运营后台）、微服务（核心业务）、Service Mesh（关键链路）、Serverless（边缘函数）。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">小结：服务面六层串起一次完整调用</div>
+        <div class="detail-section-content">
+          一次秒杀下单的完整路径：用户请求经 <strong>Higress / Spring Cloud Gateway</strong> 进入系统（鉴权 + 限流）→ <strong>Nacos</strong> 解析"订单服务"的实例列表 → <strong>gRPC</strong> 调用订单服务 → <strong>Sentinel</strong> 检查 QPS 是否超限（超限快速失败）→ 订单服务内部启动本地事务 → 投递 <strong>RocketMQ 事务消息</strong>触发库存服务异步扣减 → 全链路 <strong>OpenTelemetry</strong> trace_id 串起每一跳的 span，时延、异常实时上报 Grafana 看板。这条调用链是<strong>所有微服务工程的"母题"</strong>，它把六层基础设施压在了一次毫秒级业务请求里。
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PART C: SDN (Control Plane) ===================== -->
+    <section class="detail-layer reveal" id="layer-3">
+      <h2 class="detail-layer-title">C · SDN 架构（Control Plane） —— 控制与数据分离的网络范式</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">为什么 SDN 重要</div>
+        <div class="detail-section-content">
+          传统 IP 网络的根本痛点是：<strong>控制面与数据面紧耦合在每一台交换机/路由器上</strong>。每台设备各自计算路由表（OSPF / BGP），全网协调只能依赖分布式协议的收敛 —— 这在静态网络中尚可，在<strong>低轨卫星网络</strong>这种拓扑高速变化、链路质量秒级波动的场景中几乎崩溃。SDN（Software-Defined Networking）的核心范式是把<strong>控制面集中到逻辑上的中央控制器</strong>，数据面交换机只负责按下发的流表转发。"控制面与数据面分离"是 SDN 的唯一不变内核 —— 它和后端世界里"应用与数据库分离"是同构的工程哲学。我在 <a href="../projects/satellite-qos.html">太赫兹卫星网络仿真</a> 项目中提出的 QMR + 改进 DDPG 路由算法，正是部署在 SDN 控制面上，由控制器拉全网链路质量矩阵、训练 Actor-Critic、下发流表到数据面卫星节点。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">三类接口的几何位置</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>SDN 的三类接口对应控制器的三个"方向"：</strong>
+            <br/>• <strong>北向（Northbound）</strong>：控制器 → 上层应用 / 业务编排器。
+            <br/>• <strong>南向（Southbound）</strong>：控制器 → 下层数据面设备（交换机 / 卫星 / 路由器）。
+            <br/>• <strong>东西向（East-West）</strong>：控制器 ↔ 其他控制器（用于多控制器集群、跨域协同、AS 间路由）。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">北向接口（Northbound API）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>北向接口面向"上层意图" —— 业务应用想要的是"为视频流保障 10ms 时延、为文件下载用 ECMP 多路径"，它不应关心底层是 OpenFlow 还是 P4。北向接口的职责就是<strong>把业务意图翻译为控制器可理解的策略</strong>。</div>
+          <div class="detail-arch-item"><strong>典型实现：</strong>
+            <br/>• <strong>RESTful API</strong>（最常见）：ONOS / OpenDaylight 等控制器原生暴露 REST/JSON 接口。
+            <br/>• <strong>gRPC + Protobuf</strong>（高性能版本）：用于内部组件间高吞吐通信。
+            <br/>• <strong>NETCONF / RESTCONF + YANG 模型</strong>：网络运营商场景的标准化建模语言。
+            <br/>• <strong>意图驱动（Intent-Based Networking）</strong>：北向输入不再是配置命令，而是"意图描述"（如"VIP 用户保障 1Gbps 带宽"），由控制器自动翻译为配置。
+          </div>
+          <div class="detail-arch-item"><strong>个人实践：</strong>我在 <a href="../projects/5g-intent.html">5G 核心网意图驱动配置项目</a> 中实现的正是一个北向意图驱动系统的雏形 —— BERT 编码自然语言意图，GraphSAGE 在配置知识图谱上推理，输出可下发的配置命令序列。这恰是 SDN 北向接口"从命令到意图"演进路线上的一个研究侧切片。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">南向接口（Southbound API）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>南向接口面向"硬件数据面" —— 它告诉交换机 / 卫星节点"匹配什么样的报文 → 执行什么动作"。这是 SDN 区别于传统网络的核心革命 —— 转发逻辑不再固化在设备 firmware 里，而是由控制器动态下发。</div>
+          <div class="detail-arch-item"><strong>典型实现：</strong>
+            <br/>• <strong>OpenFlow（最经典）</strong>：1.0 → 1.5，定义了 Match-Action 流表 + 多级流水线 + Group Table + Meter Table。问题是字段固定（仅 12–40 个标准字段），扩展性受限。
+            <br/>• <strong>P4 + P4Runtime</strong>：把"数据面行为本身"也用 P4 语言编程，控制器通过 P4Runtime 下发表项。这是真正"全可编程"的下一代南向接口。
+            <br/>• <strong>OVSDB</strong>：用于配置 Open vSwitch 的端口、桥、QoS 队列（与 OpenFlow 互补：OF 管流表，OVSDB 管设备本身配置）。
+            <br/>• <strong>NETCONF / gNMI</strong>：电信级南向，适合配置/状态读取/遥测。
+            <br/>• <strong>SR-MPLS / Segment Routing</strong>：通过给报文嵌入 SID 列表实现源路由，控制器只需下发 SID-Label 映射，简化数据面。
+          </div>
+          <div class="detail-arch-item"><strong>在卫星网络中的特殊性：</strong>卫星节点的资源受限（功耗、内存、计算），不能跑完整 OVS。我们在仿真平台上简化为"轻量南向"：控制器通过专用控制信道（如 Ka 频段反向链路）下发"目的卫星 → 下一跳"二维表，卫星节点只做表查找转发。这是 SDN 思想在<strong>资源极度受限的弹性拓扑</strong>下的工程落地。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">东西向接口（East-West API）</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>定位：</strong>东西向接口处理<strong>多控制器之间的协同</strong>。当网络规模超过单控制器极限（数千节点 / 数万流表更新/秒），或网络跨越多个管辖域（不同卫星运营商、不同地面国家），就需要多控制器集群。</div>
+          <div class="detail-arch-item"><strong>三种典型协同模式：</strong>
+            <br/>① <strong>水平联邦（Federation）</strong>：多个对等控制器各管一片子网，通过东西向接口交换"边界路由 / 邻接信息"，类似传统 BGP 但在 SDN 上重新实现。代表协议：SDNi（IETF 草案）。
+            <br/>② <strong>层级管理（Hierarchical）</strong>：一个"超级控制器（Super Controller）" + 多个"区域控制器（Regional Controller）"。超级控制器决全局路由策略，区域控制器执行本域细节。这与我在 <a href="../publications/patent-satellite-qos.html">卫星 QoS 路由专利</a> 中提出的"集中式 SDN 控制器 + 分簇局部控制"架构高度契合。
+            <br/>③ <strong>分布式一致性（Distributed Consensus）</strong>：多控制器组成 Raft / Paxos 集群，保证控制面状态强一致。ONOS 集群即采用此模式。
+          </div>
+          <div class="detail-arch-item"><strong>关键挑战：</strong>
+            <br/>• <strong>状态同步代价</strong>：每秒数万条流表更新如何在控制器集群间一致复制？
+            <br/>• <strong>分区容忍</strong>：东西向链路故障时如何避免脑裂？
+            <br/>• <strong>跨域信任</strong>：不同运营商间能否共享拓扑？什么粒度上共享？
+            <br/>这些问题在卫星网络中尤为突出 —— 跨星座、跨国家、跨频段的协同需要重新设计东西向接口的安全与一致性模型。
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">主流 SDN 控制器对比</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>ONOS（Open Network Operating System）：</strong>面向运营商级网络，分布式架构（Raft 集群、Atomix 一致性框架），支持 OpenFlow / NETCONF / gNMI 多种南向，适合电信级大规模部署。</div>
+          <div class="detail-arch-item"><strong>OpenDaylight (ODL)：</strong>Linux 基金会项目，模块化 OSGi 架构，生态最丰富但学习曲线陡。常用于研究与企业 PoC。</div>
+          <div class="detail-arch-item"><strong>Ryu：</strong>NTT 开源的轻量 Python 控制器，适合教学与原型验证；性能上限较低。我在 <a href="../projects/satellite-qos.html">卫星仿真</a> 早期算法验证阶段使用 Ryu 快速原型。</div>
+          <div class="detail-arch-item"><strong>Floodlight：</strong>较早的 Java 控制器，工程结构简单，适合作为入门学习材料。</div>
+          <div class="detail-arch-item"><strong>商用方案：</strong>Cisco APIC（ACI 架构）、华为 iMaster NCE（意图驱动）、VMware NSX —— 闭源但企业生态完备。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">小结：数据面 + 服务面 + 控制面三柱同构</div>
+        <div class="detail-section-content">
+          回到本页开头的判断：A · 后端栈 把"应用"与"数据库"分离，让数据成为可独立扩缩容的服务；B · 微服务 把"业务逻辑"与"治理能力"分离，让 Sidecar / Service Mesh 把熔断、追踪、路由这些横切关注点集中起来管理；C · SDN 把"控制"与"数据面"分离，让网络成为可被软件编程的服务。<strong>三个平面，同一种哲学 —— 把"决策逻辑"从执行单元里剥离出来集中管理。</strong>这正是 Service Mesh 等于"微服务领域的 SDN"的真正原因，也是为什么从信息系统、通信系统到智能系统（Agent Planner 集中决策 + Tool 分布执行），"集中决策 + 分布执行"这一思想反复被验证。把这三层并列起来理解，是我把"系统视角"作为自我定位之一的根因。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-4">
+      <h2 class="detail-layer-title">技术栈与相关项目</h2>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">A · 后端栈（Data Plane）技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">Redis</span><span class="tag">Memcached</span><span class="tag">KeyDB</span><span class="tag">Dragonfly</span>
+          <span class="tag">Kafka</span><span class="tag">KRaft</span><span class="tag">RocketMQ</span><span class="tag">RabbitMQ</span>
+          <span class="tag">Flink</span><span class="tag">Spark Streaming</span><span class="tag">Kafka Streams</span><span class="tag">Storm</span>
+          <span class="tag">Spark</span><span class="tag">Hadoop MR</span><span class="tag">Trino / Presto</span><span class="tag">ClickHouse</span>
+          <span class="tag">Iceberg</span><span class="tag">Delta Lake</span><span class="tag">Hudi</span>
+          <span class="tag">Milvus</span><span class="tag">Qdrant</span><span class="tag">Weaviate</span><span class="tag">pgvector</span>
+          <span class="tag">MySQL</span><span class="tag">PostgreSQL</span><span class="tag">TiDB</span>
+          <span class="tag">Neo4j</span><span class="tag">Nebula Graph</span><span class="tag">JanusGraph</span>
+          <span class="tag">MongoDB</span><span class="tag">Cassandra</span><span class="tag">DynamoDB</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">B · 微服务（Service Plane）技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">gRPC</span><span class="tag">Protobuf</span><span class="tag">HTTP/2</span><span class="tag">REST / OpenAPI</span><span class="tag">GraphQL</span><span class="tag">Thrift</span><span class="tag">Dubbo</span><span class="tag">JSON-RPC</span>
+          <span class="tag">Spring Boot</span><span class="tag">Spring Cloud</span><span class="tag">Spring Cloud Alibaba</span>
+          <span class="tag">Nacos</span><span class="tag">Consul</span><span class="tag">etcd</span><span class="tag">Eureka</span><span class="tag">ZooKeeper</span>
+          <span class="tag">Spring Cloud Gateway</span><span class="tag">Higress</span><span class="tag">Kong</span><span class="tag">APISIX</span><span class="tag">Traefik</span>
+          <span class="tag">Sentinel</span><span class="tag">Hystrix</span><span class="tag">Resilience4j</span>
+          <span class="tag">OpenTelemetry</span><span class="tag">SkyWalking</span><span class="tag">Jaeger</span><span class="tag">Zipkin</span><span class="tag">Prometheus</span><span class="tag">Grafana</span>
+          <span class="tag">RocketMQ 事务消息</span><span class="tag">Seata</span><span class="tag">TCC</span><span class="tag">Saga</span><span class="tag">本地消息表</span>
+          <span class="tag">Istio</span><span class="tag">Envoy</span><span class="tag">Linkerd</span><span class="tag">Service Mesh</span><span class="tag">Serverless / FaaS</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">C · SDN（Control Plane）技术栈</div>
+        <div class="detail-tags">
+          <span class="tag">OpenFlow</span><span class="tag">P4</span><span class="tag">P4Runtime</span><span class="tag">OVSDB</span><span class="tag">NETCONF</span><span class="tag">RESTCONF</span><span class="tag">YANG</span><span class="tag">gNMI</span><span class="tag">Segment Routing</span>
+          <span class="tag">ONOS</span><span class="tag">OpenDaylight</span><span class="tag">Ryu</span><span class="tag">Floodlight</span>
+          <span class="tag">Cisco APIC</span><span class="tag">华为 iMaster NCE</span><span class="tag">VMware NSX</span>
+          <span class="tag">意图驱动网络 (IBN)</span><span class="tag">SDNi</span>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">相关项目实践</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>[A + B]</strong> → <a href="../projects/agent-ops.html">电商秒杀 + Agent 自动运维告警系统</a> —— Spring Boot + Nacos + Sentinel + RocketMQ 事务消息 + Redis + Milvus + Prometheus 端到端微服务落地，是服务面六层的实战载体</div>
+          <div class="detail-arch-item"><strong>[A]</strong> → <a href="../projects/experience-huawei.html">华为 6G 通感数据架构实习</a> —— Kafka / KRaft + Flink + Iceberg / Delta Lake 流批一体栈实战；KRaft 协议 Wireshark 插件已开源</div>
+          <div class="detail-arch-item"><strong>[C]</strong> → <a href="../projects/satellite-qos.html">太赫兹卫星网络仿真</a> —— SDN 集中控制器架构下的智能路由算法（QMR + 改进 DDPG）</div>
+          <div class="detail-arch-item"><strong>[C]</strong> → <a href="../projects/5g-intent.html">5G 核心网意图驱动配置</a> —— SDN 北向接口"意图驱动"研究侧实践，BERT + GraphSAGE 在 5G NEF/CAPIF 框架下落地</div>
+          <div class="detail-arch-item"><strong>[C]</strong> → <a href="../publications/patent-satellite-qos.html">卫星 QoS 分簇路由专利</a> —— SDN 层级控制器架构 + GNN-GRU + QMIX 在卫星网络的工程化</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 蔡嘉骏 · Cai Jiajun</p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

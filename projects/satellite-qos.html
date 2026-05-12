@@ -28,7 +28,7 @@
   <div class="project-detail-inner">
     <a href="../#projects" class="back-link">← 返回主页</a>
 
-    <div class="detail-badge">北邮 × 国家重点项目 · 太赫兹组网仿真 · 2024.09 – 2025</div>
+    <div class="detail-badge">北邮 × 国家重点项目 · 太赫兹组网仿真 · 2024.06 – 2025.01</div>
     <h1 class="detail-title serif">太赫兹卫星网络协议栈与智能路由仿真</h1>
     <p class="detail-desc reveal">
       国家重点项目「太赫兹组网仿真技术研究」的核心研发任务。一方面构建基于 MATLAB（链路仿真）+ OPNET（网络仿真）+ Python（强化学习）的联合仿真平台，对 220 GHz 太赫兹频段下 225 颗 LEO + 5 颗 GEO 卫星网络做端到端协议级验证；另一方面在 SDN 架构下提出 <strong>QMR + DDPG 多径路由算法</strong>（论文草稿《结合 QoS 感知与深度强化学习的低轨卫星网络多径路由算法》），相比 ECMP 等价多路径路由端到端时延降低 15%。算法的工程化扩展申请发明专利《一种基于深度强化学习的大规模卫星网络分簇 QoS 路由方法》（正在发表）。
@@ -301,11 +301,57 @@ D̂、B̂、L̂ 是对 D、B、L 三个原始矩阵做 min-max 归一化后的�
       </div>
 
       <div class="detail-section reveal">
-        <div class="detail-section-title">仿真环境、超参数与对比结果</div>
+        <div class="detail-section-title">实验场景：星座 / 拓扑 / 不平衡业务设置</div>
         <div class="detail-section-content">
-          <strong>仿真平台：</strong>STK 11 生成 Walker 星座轨迹（5 GEO + 15 轨道 × 15 颗 = 225 LEO）；OPNET 14.5 实现基于 SDN 的卫星协议栈；构建 Python 3.10 ↔ OPNET 14.5 的通信桥，让 Python 端跑 DDPG 神经网络，把动作回传给 OPNET 执行。设计了"不平衡业务场景"——故意让某些链路在单径路由下严重拥塞，凸显多径与智能分流的优势。<br><br>
-          <strong>对比算法：</strong>① SPF（Shortest Path First）单径最短路径；② ECMP（Equal-Cost MultiPath）等权重多径分流；③ QMR + DDPG（本文方案）。
+          为放大多径与智能分流的优势，论文设计了一个<strong>不平衡业务场景</strong>——故意让多条业务流的最短路径汇聚到同一条链路，造成单径路由下该链路严重拥塞，从而暴露 SPF / ECMP / QMR+DDPG 三类算法在拥塞规避能力上的差异。
         </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">仿真维度</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">参数取值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:8px 14px;">星座类型</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">Walker 星座</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">高轨卫星数量</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">5 颗 GEO</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">低轨卫星轨道数 / 每轨道颗数</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">15 轨道 × 15 颗 = 225 LEO</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">星间链路 (ISL)</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">每颗 LEO 4 方向（前 / 后 / 左 / 右），极区断开跨轨</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">总业务流速率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1 Gb/s ~ 5 Gb/s（多档对比）</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">数据包大小</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1024 bytes</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">每对源-目的候选路径数 K</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">2 ~ 4</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">仿真时长</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">60 s（每档流量负载）</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">链路状态更新周期</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">5 s（GEO 经地面站向 LEO 广播）</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">仿真平台</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">STK 11（轨道）+ OPNET 14.5（协议） + Python 3.10（RL）</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">实验硬件</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">AMD Ryzen 7 7745h @ 3.6 GHz + NVIDIA RTX 4060</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="detail-section-content">
+          <strong>业务负载组成（按 QoS 敏感度三元组分类）：</strong>实验中并行注入三类业务，每类业务对时延、带宽、丢包率敏感度不同。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">业务类型</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">代表场景</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">(α, β, γ)</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">优先级</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:8px 14px;">实时业务</td><td style="padding:8px 14px;">视频会议 / 远程医疗 / 关键控制</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;color:#fff;">(0.7, 0.2, 0.1)</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">高</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">高可靠业务</td><td style="padding:8px 14px;border-top:1px solid var(--border);">文件传输 / 卫星遥感 / 灾备</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;">(0.3, 0.3, 0.4)</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">中</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">弹性业务</td><td style="padding:8px 14px;border-top:1px solid var(--border);">背景同步 / 非关键任务</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;">(0.2, 0.5, 0.3)</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">低</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">DDPG 训练超参数</div>
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
           <table style="width:100%;border-collapse:collapse;">
             <thead>
@@ -319,22 +365,45 @@ D̂、B̂、L̂ 是对 D、B、L 三个原始矩阵做 min-max 归一化后的�
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">Actor 学习率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-4</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">Critic 学习率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-3</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">目标网络软更新 τ</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1e-3</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">Replay Buffer 容量</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">10 000</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">小批量 batch size</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">64</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">隐藏特征维度</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">128</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">消息传递迭代 L</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">8</td></tr>
               <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">OU 噪声 (μ, θ, σ)</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">(0, 0.15, 0.2)</td></tr>
-              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">实验硬件</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">AMD Ryzen 7745h 3.6GHz + RTX 4060</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">优化器</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">Adam</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">对比算法与性能结果</div>
+        <div class="detail-section-content">
+          <strong>对比基线：</strong>① <strong>SPF</strong>（Shortest Path First）—— 基于链路时延的单径最短路径，作为"无负载均衡"的下界；② <strong>ECMP</strong>（Equal-Cost MultiPath）—— 先用最短路径找出多条等跳数路径，再把流量在路径之间均匀分配，是工业界部署最广的多径方案；③ <strong>QMR + DDPG</strong>—— 本文方法。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">指标（1 Gb/s × 60 s 不平衡场景）</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">SPF</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">ECMP</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">QMR + DDPG</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:8px 14px;">平均端到端时延</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">基线（最差，单径拥塞）</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">中</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;color:#fff;"><strong>相比 ECMP −15%</strong></td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">网络平均吞吐量</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">基线</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">+2%</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;"><strong>+2%（与 ECMP 接近）</strong></td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);">平均丢包率</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">显著最高（单链路过载）</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">中</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;color:#fff;"><strong>相比 ECMP −12%</strong></td></tr>
             </tbody>
           </table>
         </div>
         <div class="detail-section-content">
-          <strong>性能结果（业务流 1 Gb/s，仿真窗口 60 s）：</strong>
-          <ul style="margin:8px 0 8px 24px;color:#e0e0e0;line-height:1.8;">
-            <li><strong>平均端到端时延</strong>：QMR + DDPG 相比 ECMP <strong>降低 ~15%</strong>；SPF 因单径拥塞最差。</li>
-            <li><strong>平均吞吐量</strong>：多径方案（ECMP 与 QMR + DDPG）相比 SPF <strong>提升 ~2%</strong>，QMR + DDPG 与 ECMP 在该指标上接近（均充分利用了多径带宽）。</li>
-            <li><strong>平均丢包率</strong>：QMR + DDPG 相比 ECMP <strong>降低 ~12%</strong>，SPF 因单链路过载丢包率显著最高。</li>
-            <li><strong>弹性场景</strong>：考虑链路损毁与失能概率后，时延 / 吞吐 / 丢包三个指标 QMR + DDPG 相比 ECMP 都获得约 <strong>5% 的额外增益</strong>，证明算法在动态故障下的鲁棒性。</li>
-          </ul>
+          <strong>负载扫描（1 → 5 Gb/s）：</strong>在保持 60 s 仿真时长下逐档加大业务流量，QMR + DDPG 的时延 / 吞吐 / 丢包优势随负载增大而更明显——SPF 在 ≥ 3 Gb/s 时单路径拥塞崩溃、丢包率急剧上升，ECMP 因无差异分流出现部分路径过载，而 QMR + DDPG 由智能体感知拥塞并动态调整 ω<sub>m,k</sub>，仍能维持稳定性能。
+          <br><br>
+          <strong>弹性场景（注入链路损毁与失能概率）：</strong>时延、吞吐、丢包三个指标 QMR + DDPG 相比 ECMP 都获得约 <strong>+5% 的额外增益</strong>，体现算法在动态故障下的鲁棒性 —— DDPG 能在链路质量变化后通过策略调整把流量从衰退链路迁移到健康链路，而 ECMP 静态分流缺少这一能力。
+          <br><br>
+          <strong>训练收敛：</strong>DDPG 训练奖励曲线从初值约 −65,400 收敛到稳定约 342,265（论文图），约 1 万步迭代内收敛，证明在 Walker 星座规模下消息传递架构 + 经验回放 + 目标网络 + OU 噪声的组合训练稳定。
         </div>
       </div>
     </section>
