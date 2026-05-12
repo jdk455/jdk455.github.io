@@ -75,9 +75,9 @@
           <text x="42" y="436" fill="#a8a8a8" font-size="10.5">Spark ★</text>
           <text x="42" y="452" fill="#888" font-size="10">vs MR / Trino / ClickHouse</text>
 
-          <text x="42" y="476" fill="#C9A96E" font-size="11" font-weight="700">⑤ 数据库</text>
-          <text x="42" y="494" fill="#a8a8a8" font-size="10.5">Milvus ★（向量）· Neo4j ★（图）</text>
-          <text x="42" y="510" fill="#888" font-size="10">vs MySQL · NoSQL · 多模并存</text>
+          <text x="42" y="476" fill="#C9A96E" font-size="11" font-weight="700">⑤ 数据库（两层分类）</text>
+          <text x="42" y="494" fill="#a8a8a8" font-size="10.5">RDBMS：MySQL · NoSQL：KV/Doc/Col/Graph ★</text>
+          <text x="42" y="510" fill="#888" font-size="10">+ Vector ★ Milvus（新独立类）</text>
 
           <!-- MIDDLE PILLAR: B · 微服务 -->
           <rect x="355" y="170" width="270" height="350" rx="12" fill="rgba(201,169,110,0.04)" stroke="#C9A96E" stroke-width="1.2"/>
@@ -222,7 +222,7 @@
 
       <!-- ===== 5. Milvus / Database family ===== -->
       <div class="detail-section reveal">
-        <div class="detail-section-title">数据库层 · 典型：Milvus（向量数据库视角）</div>
+        <div class="detail-section-title">数据库层 · 典型：Milvus（向量数据库 · LLM 时代新独立类）</div>
         <div class="detail-arch">
           <div class="detail-arch-item"><strong>定位：</strong>Milvus 是面向 Embedding 检索的开源分布式向量数据库。在 LLM 时代，"语义检索"成为继"关系查询"之后的第二种基本检索原语，Milvus（以及 Pinecone / Weaviate / Qdrant）是该原语的工业级实现。我在 <a href="../projects/agent-ops.html">Agent 运维项目</a> 中用 Milvus 存储 Runbook 知识库，每次告警触发后基于语义相似度从知识库召回 top-k 处置建议。</div>
           <div class="detail-arch-item"><strong>核心特性：</strong>
@@ -235,39 +235,63 @@
       </div>
 
       <div class="detail-section reveal">
-        <div class="detail-section-title">数据库四大家族横向对比</div>
+        <div class="detail-section-title">数据库分类学：RDBMS · NoSQL（KV / Document / Column-Family / Graph）· Vector</div>
         <div class="detail-arch">
-          <div class="detail-arch-item"><strong>① 关系型数据库 · MySQL（代表）：</strong>
+          <div class="detail-arch-item"><strong>先把分类学讲清楚 —— 这是工程师容易犯的错误之一。</strong>数据库按数据模型的严格分类有两层：<strong>第一级是 RDBMS vs NoSQL</strong>；NoSQL 本身是"Not-Only-SQL"的伞概念，下含四个标准子类 —— <strong>Key-Value、Document、Column-Family、Graph</strong>（源自 Martin Fowler &amp; Pramod Sadalage 的《NoSQL Distilled》、CMU 15-721 数据库课程的标准教科口径）。<strong>向量数据库（Vector）是 2020+ 随 embedding 检索兴起的新独立类</strong>，传统 NoSQL 四分类里没有它，业界正在把它视作平起平坐的"第六类"。所以严谨的并列是：<code>RDBMS · KV · Document · Column-Family · Graph · Vector</code> —— 六大类，而<strong>不是把"图"与"NoSQL"并列、把"向量"塞进 NoSQL 这种错误分法</strong>。下面按这一分类逐个展开。</div>
+
+          <div class="detail-arch-item"><strong>① RDBMS · 关系型 · MySQL（代表）：</strong>
             <br/>• <strong>数据模型</strong>：行式存储，强 Schema，支持完整 SQL + ACID 事务（InnoDB 引擎下默认 RR 隔离级别）。
             <br/>• <strong>核心特性</strong>：B+ 树主键索引、二级索引、外键、多版本并发控制（MVCC）、Binlog。
             <br/>• <strong>适用场景</strong>：交易系统、订单、用户账户、库存等"强一致 + 强 schema"场景。
-            <br/>• <strong>主流变体</strong>：PostgreSQL（更强的 SQL 标准合规 + JSONB + 扩展生态）、TiDB / OceanBase（HTAP 分布式 SQL）。
+            <br/>• <strong>主流变体</strong>：PostgreSQL（更强 SQL 标准合规 + JSONB + pgvector 等扩展生态）、TiDB / OceanBase（HTAP 分布式 SQL）、Oracle / SQL Server（商业）。
           </div>
-          <div class="detail-arch-item"><strong>② 向量数据库 · Milvus（代表）：</strong>
-            <br/>• <strong>数据模型</strong>：高维向量（768 / 1024 / 1536 维）+ 标量 metadata。
-            <br/>• <strong>核心检索</strong>：基于距离度量（cosine / L2 / inner product）的近似最近邻搜索。
-            <br/>• <strong>适用场景</strong>：RAG（Retrieval-Augmented Generation）、语义搜索、推荐召回、图片相似检索。
-            <br/>• <strong>主流变体</strong>：Pinecone（SaaS 化）、Weaviate（带知识图谱）、Qdrant（Rust 实现、轻量）、Chroma（嵌入式、单机）。Postgres 的 pgvector 插件也是务实选择。
+
+          <div class="detail-arch-item"><strong>② NoSQL · 子类 a · Key-Value · Redis / DynamoDB（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：最简单的 K→V 映射，部分实现支持 Hash / List / Set 等聚合结构（Redis 即如此）。
+            <br/>• <strong>核心特性</strong>：单 Key 操作 O(1)、写入吞吐极高、模型语义贫瘠（不支持 SQL）。
+            <br/>• <strong>适用场景</strong>：会话存储（Session）、计数器、排行榜、配置元数据、分布式锁、热点缓存。
+            <br/>• <strong>主流代表</strong>：<a href="#layer-1">Redis ★</a>（既作缓存也作 KV 数据库使用）、Amazon DynamoDB（AWS 全托管，按需弹性）、etcd（Raft 强一致 KV，K8s 元数据库）、TiKV（基于 Raft 的分布式 KV，TiDB 底层）、FoundationDB（Apple 收购，事务性 KV）。
           </div>
-          <div class="detail-arch-item"><strong>③ 图数据库 · Neo4j（代表）：</strong>
-            <br/>• <strong>数据模型</strong>：节点 + 边 + 属性，强调"关系是一等公民"。
-            <br/>• <strong>核心查询语言</strong>：Cypher（OpenCypher 标准），强项是多跳遍历（MATCH (a)-[:FRIEND*2..4]-(b)）。
+
+          <div class="detail-arch-item"><strong>③ NoSQL · 子类 b · Document · MongoDB（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：BSON / JSON 文档，<strong>灵活 Schema</strong>（schemaless），每条记录可有不同字段。
+            <br/>• <strong>核心特性</strong>：嵌套结构原生支持、丰富的二级索引、聚合管道（Aggregation Pipeline）、分片集群。
+            <br/>• <strong>适用场景</strong>：内容形态多变的业务（CMS、用户画像、商品目录、日志）、原型迭代期需要频繁改 schema 的项目。
+            <br/>• <strong>主流变体</strong>：CouchDB（HTTP API + MVCC）、Couchbase（带内存缓存的 Document）、Elastic / OpenSearch（带强大全文检索的 Document，本质也是 Document 型）。
+          </div>
+
+          <div class="detail-arch-item"><strong>④ NoSQL · 子类 c · Column-Family（宽列族） · Cassandra（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：基于 Google Bigtable + Amazon Dynamo 论文，按"行键 → 列族 → 列限定符"组织数据，物理上按列族存储。
+            <br/>• <strong>核心特性</strong>：<strong>无主多副本（masterless）</strong> + Gossip 协议 + 一致性 hash 数据分布；最终一致性可调（ONE / QUORUM / ALL）；写入吞吐极高（百万/秒级）。
+            <br/>• <strong>适用场景</strong>：时序数据、IoT 传感器数据、监控指标、用户行为日志、超大规模写入场景。
+            <br/>• <strong>主流变体</strong>：Apache HBase（基于 HDFS 的 Bigtable 直系实现）、ScyllaDB（C++ 重写 Cassandra，性能提升 10x）、Google Bigtable（GCP 托管原版）。
+          </div>
+
+          <div class="detail-arch-item"><strong>⑤ NoSQL · 子类 d · Graph · Neo4j（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：节点 + 边 + 属性，<strong>"关系是一等公民"</strong> —— 关系本身可附带属性、被索引、被查询。
+            <br/>• <strong>核心查询语言</strong>：Cypher（OpenCypher 标准），强项是<strong>多跳遍历</strong>（如 <code>MATCH (a)-[:FRIEND*2..4]-(b)</code>，在 RDBMS 里需要多次 JOIN 才能模拟）。
             <br/>• <strong>适用场景</strong>：知识图谱、社交网络、风控反欺诈、推荐系统中的"关系挖掘"。
-            <br/>• <strong>主流变体</strong>：JanusGraph（基于 HBase/Cassandra 的分布式图）、Nebula Graph（国产，分布式图）、TigerGraph（商业、高性能）、ArangoDB（多模融合）。
-            <br/>• <strong>个人实践</strong>：在 <a href="../projects/5g-intent.html">5G 意图驱动配置项目</a> 中用 Neo4j 存储 5,333 条配置命令的功能 / 参数引用关系图，再用 GraphSAGE 做图卷积学习节点嵌入。
+            <br/>• <strong>主流变体</strong>：JanusGraph（基于 HBase/Cassandra 的分布式图）、Nebula Graph（国产，分布式 + Cypher）、TigerGraph（商业，高性能）、ArangoDB（多模融合，含图）、Amazon Neptune（AWS 托管）。
+            <br/>• <strong>个人实践 ★</strong>：在 <a href="../projects/5g-intent.html">5G 意图驱动配置项目</a> 中用 Neo4j 存储 5,333 条配置命令的功能 / 参数引用关系图，再用 GraphSAGE 做图卷积学习节点嵌入。
           </div>
-          <div class="detail-arch-item"><strong>④ NoSQL 文档/列族/KV · MongoDB / Cassandra / DynamoDB：</strong>
-            <br/>• <strong>MongoDB（文档型）</strong>：BSON 文档，灵活 Schema，适合"内容形态多变"的业务（CMS、用户画像、日志）。
-            <br/>• <strong>Cassandra / ScyllaDB（宽列族）</strong>：基于 Dynamo 论文，无主多副本，最终一致性，写入吞吐极高（百万/秒级），适合时序、IoT、监控指标。
-            <br/>• <strong>DynamoDB / TiKV / FoundationDB（KV）</strong>：最简单的数据模型，配合外部索引服务可扩展为通用存储基座。
-            <br/>• <strong>共同点</strong>：牺牲 SQL 表达力与强一致性，换水平扩展性与写入吞吐。
+
+          <div class="detail-arch-item"><strong>⑥ Vector · 向量数据库（新独立类） · Milvus（代表）：</strong>
+            <br/>• <strong>数据模型</strong>：高维向量（768 / 1024 / 1536 维）+ 标量 metadata；查询语义从"精确匹配"切换为"<strong>近似最近邻（ANN）</strong>"。
+            <br/>• <strong>核心检索</strong>：基于距离度量（cosine / L2 / inner product）的 ANN 搜索，底层索引算法 HNSW / IVF_PQ / DiskANN。
+            <br/>• <strong>为什么是"新独立类"</strong>：经典 NoSQL 四分类成型于 2010 年前，向量检索还不是核心需求；2020 年 RAG / Embedding 检索爆发后才作为独立品类出现，<strong>学术界正在把它视作与 KV/Doc/Column/Graph 平起平坐的"第六类"</strong>。
+            <br/>• <strong>适用场景</strong>：RAG（Retrieval-Augmented Generation）、语义搜索、推荐召回、图片 / 音频相似检索。
+            <br/>• <strong>主流变体</strong>：Pinecone（SaaS 化全托管）、Weaviate（带知识图谱混合查询）、Qdrant（Rust 实现，轻量高性能）、Chroma（嵌入式单机）、pgvector（PostgreSQL 扩展，"务实派"选择 —— 不引入新组件直接复用现有 RDBMS）。
+            <br/>• <strong>个人实践 ★</strong>：在 <a href="../projects/agent-ops.html">Agent 运维项目</a> 中用 Milvus 存储 Runbook 知识库，每次告警触发后基于语义相似度从知识库召回 top-k 处置建议。
           </div>
-          <div class="detail-arch-item"><strong>选型心智模型：</strong>
-            <br/>• "我要做强一致的交易" → MySQL / Postgres
-            <br/>• "我要按语义找最像的东西" → Milvus / Qdrant
-            <br/>• "我要查多跳关系" → Neo4j / Nebula
-            <br/>• "我要存 PB 级 schemaless 时序" → Cassandra / ClickHouse
-            <br/>真实系统几乎都是<strong>多模并存</strong>：MySQL 存账务、Redis 存缓存、Milvus 存向量、Neo4j 存知识图谱、Kafka 当总线。把每个组件用在它最擅长的地方，才是"系统视角"的本质。
+
+          <div class="detail-arch-item"><strong>选型心智模型（按问题反推）：</strong>
+            <br/>• "强一致交易、强 schema" → <strong>RDBMS</strong>（MySQL / Postgres）
+            <br/>• "极简 KV、高吞吐、热点缓存" → <strong>KV</strong>（Redis / DynamoDB）
+            <br/>• "schema 多变、嵌套结构" → <strong>Document</strong>（MongoDB）
+            <br/>• "PB 级时序 / 海量写入 / 无主可用性" → <strong>Column-Family</strong>（Cassandra / ScyllaDB）
+            <br/>• "多跳关系查询、知识图谱" → <strong>Graph</strong>（Neo4j / Nebula）
+            <br/>• "语义检索 / RAG / embedding 近邻" → <strong>Vector</strong>（Milvus / Qdrant / pgvector）
+            <br/><br/>真实系统几乎都是<strong>多模并存（polyglot persistence）</strong>：MySQL 存账务、Redis 当 KV 缓存、Milvus 存向量、Neo4j 存知识图谱、Kafka 当总线、Cassandra 存时序监控。<strong>把每个组件用在它最擅长的数据模型上</strong>，才是"系统视角"的本质 —— 而不是"用一个数据库装所有数据"或"NoSQL 与图并列"这类粗放分类。
           </div>
         </div>
       </div>
@@ -521,16 +545,37 @@
 
       <div class="detail-section reveal">
         <div class="detail-section-title">A · 后端栈（Data Plane）技术栈</div>
-        <div class="detail-tags">
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">缓存 / 中间件 / 计算引擎</span>
           <span class="tag">Redis</span><span class="tag">Memcached</span><span class="tag">KeyDB</span><span class="tag">Dragonfly</span>
           <span class="tag">Kafka</span><span class="tag">KRaft</span><span class="tag">RocketMQ</span><span class="tag">RabbitMQ</span>
           <span class="tag">Flink</span><span class="tag">Spark Streaming</span><span class="tag">Kafka Streams</span><span class="tag">Storm</span>
           <span class="tag">Spark</span><span class="tag">Hadoop MR</span><span class="tag">Trino / Presto</span><span class="tag">ClickHouse</span>
           <span class="tag">Iceberg</span><span class="tag">Delta Lake</span><span class="tag">Hudi</span>
-          <span class="tag">Milvus</span><span class="tag">Qdrant</span><span class="tag">Weaviate</span><span class="tag">pgvector</span>
-          <span class="tag">MySQL</span><span class="tag">PostgreSQL</span><span class="tag">TiDB</span>
-          <span class="tag">Neo4j</span><span class="tag">Nebula Graph</span><span class="tag">JanusGraph</span>
-          <span class="tag">MongoDB</span><span class="tag">Cassandra</span><span class="tag">DynamoDB</span>
+        </div>
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · RDBMS（关系型）</span>
+          <span class="tag">MySQL</span><span class="tag">PostgreSQL</span><span class="tag">TiDB</span><span class="tag">OceanBase</span><span class="tag">Oracle</span>
+        </div>
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · NoSQL · KV</span>
+          <span class="tag">Redis</span><span class="tag">DynamoDB</span><span class="tag">etcd</span><span class="tag">TiKV</span><span class="tag">FoundationDB</span>
+        </div>
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · NoSQL · Document</span>
+          <span class="tag">MongoDB</span><span class="tag">CouchDB</span><span class="tag">Couchbase</span><span class="tag">Elasticsearch / OpenSearch</span>
+        </div>
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · NoSQL · Column-Family</span>
+          <span class="tag">Cassandra</span><span class="tag">HBase</span><span class="tag">ScyllaDB</span><span class="tag">Google Bigtable</span>
+        </div>
+        <div class="detail-tags" style="margin-bottom:14px">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · NoSQL · Graph</span>
+          <span class="tag">Neo4j</span><span class="tag">Nebula Graph</span><span class="tag">JanusGraph</span><span class="tag">TigerGraph</span><span class="tag">ArangoDB</span>
+        </div>
+        <div class="detail-tags">
+          <span class="tag" style="background:rgba(201,169,110,0.18);border-color:rgba(201,169,110,0.35);font-weight:600">数据库 · Vector（新独立类）</span>
+          <span class="tag">Milvus</span><span class="tag">Pinecone</span><span class="tag">Qdrant</span><span class="tag">Weaviate</span><span class="tag">Chroma</span><span class="tag">pgvector</span>
         </div>
       </div>
 
