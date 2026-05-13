@@ -114,6 +114,51 @@
           从"本地换届"升级为"以 QC/highQC 驱动的对齐"，消除视图漂移。Event-Driven 架构消除轮询等待，使系统在异常场景下更快做出反应。新增 NCollector（NewView 收集器）缓存与验证 NData，输出 highQC 和 AggQCProof。</div>
         </div>
       </div>
+
+      <!-- ============ Engine 内部协作时序图 ============ -->
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Engine 内部协作时序：双通道详解</div>
+        <div class="detail-section-content">
+          把"双通道驱动"翻译到代码层面 —— 下图展示了 MaxBFT 共识引擎 <code>Engine</code> 在两类事件触发下，与 <code>PaceMaker</code> / <code>Forester</code> / <code>Validator</code> / <code>VotesCollector</code> / <code>NCollector</code> / <code>WalAdaptor</code> / <code>MsgBus</code> 七个核心组件的完整交互序列。上半部分（<strong>Timeout / View-Change</strong>）是创新点 01 NData 机制的<strong>换届通道</strong>；下半部分（<strong>Proposal / Vote</strong>）是常规<strong>快路径</strong>。
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <img src="./img/maxbft_engine.png" alt="MaxBFT Engine 内部协作时序图（双通道）" style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:12px;">
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">MaxBFT 共识引擎双通道时序：换届通道（NData → highQC → AggQC）+ 常规通道（Proposal → Vote → QC）—— 两条通道最终汇入相同的 <code>processQC / UpdateStatesByQC / UpdateWithQc / startNewView</code> 四步收尾</p>
+        </div>
+
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>换届通道（Timeout / View-Change · 对应创新点 01 + 02）：</strong>
+            <br/>① <code>OnTimeout(event)</code> —— PaceMaker 触发超时事件，Engine 接管换届流程；
+            <br/>② <code>AddNewView()</code> —— PaceMaker 本地推进 view 编号；
+            <br/>③ <code>GenerateNData(nextView, genericQC)</code> —— Engine 构造 <strong>NData 消息</strong>，附带本节点最高 QC（genericQC）；
+            <br/>④ <code>sendNDataToLeader()</code> —— 经 MsgBus 单播给下一任 Leader（不广播全网，省带宽）；
+            <br/>⑤ <code>handleNData(n)</code> 进入 <strong>Leader 节点</strong>处理流程；
+            <br/>⑥ <code>ValidateNData(n)</code> —— Validator 校验消息合法性与签名；
+            <br/>⑦ <code>SaveWalEntry(N_MESSAGE)</code> —— WalAdaptor 落 WAL（崩溃恢复关键）；
+            <br/>⑧ <code>AddN(n); TryBuildHighQc(view)</code> —— NCollector 缓存 NData，凑齐 (N − f) 份后用 <strong>BLS 聚合签名</strong>构造 <strong>highQC + AggQCProof</strong>；
+            <br/>⑨ <code>processHighQC(highQC)</code> → <code>UpdateStatesByQC</code> → <code>UpdateWithQc</code> → <code>startNewView()</code> —— Forester 更新区块森林、PaceMaker 推进 view，新 Leader 携 highQC 发起新提案。
+            <br/><br/>
+            <strong>关键设计：</strong>原版 MaxBFT 缺失 NData 机制 → 节点状态无法收敛、活性恢复秒级；这条通道通过"<strong>NData 主动上报 + AggQC 一次聚合证明</strong>"把故障恢复压缩到 <strong>~200 ms</strong>（提前 1 个 view）。
+          </div>
+
+          <div class="detail-arch-item"><strong>常规通道（Proposal / Vote · 正常快路径）：</strong>
+            <br/>① <code>handleProposal(proposal)</code> —— 副本节点收到 Leader 提案；
+            <br/>② <code>ValidateProposal()</code> —— Validator 校验提案合法性（前驱 QC / view / 签名）；
+            <br/>③ <code>UpdateStatesByProposal(); AddProposal()</code> —— Forester 把提案挂到区块森林、更新本地状态；
+            <br/>④ <code>SaveWalEntry(PROPOSAL)</code> —— WalAdaptor 持久化提案；
+            <br/>⑤ <code>handleCurrViewProposal()</code> —— 处理当前 view 提案逻辑；
+            <br/>⑥ <code>GenerateVote()</code> —— Engine 生成本节点投票（含签名）；
+            <br/>⑦ <code>sendVoteToLeader()</code> —— 经 MsgBus 单播给 Leader；
+            <br/>⑧ 进入 <strong>Leader 视角</strong>：<code>handleVote(vote)</code> → <code>ValidateVote()</code> → <code>SaveWalEntry(VOTE)</code>；
+            <br/>⑨ <code>AddVote(); TryBuildQc()</code> —— VotesCollector 凑齐 (N − f) 份后聚合构造 <strong>QC</strong>；
+            <br/>⑩ <code>processQC(qc)</code> → <code>UpdateStatesByQC</code> → <code>UpdateWithQc</code> → <code>startNewView()</code> —— 与换届通道殊途同归。
+            <br/><br/>
+            <strong>关键设计：</strong>所有"重消息"（Proposal / Vote / NData）都经 <code>WalAdaptor</code> 落 WAL；任何节点崩溃重启都能从 WAL replay 出完整状态，配合 NData 主动收敛快速回到共识 —— 这是 <strong>18 ms WAL replay + 350 个 view 内提案者状态可恢复</strong>的工程基础。
+          </div>
+
+          <div class="detail-arch-item"><strong>两条通道的交汇点：</strong>注意两条通道最后都汇入相同的"<code>processQC / processHighQC → UpdateStatesByQC → UpdateWithQc → startNewView</code>"四步收尾。这是双通道架构的精妙之处 —— <strong>无论是常规快路径还是换届慢路径，对外都呈现相同的 view 推进语义</strong>，上层应用感知不到 Leader 切换的"接缝"，这正是 200 ms 故障恢复对业务无感的根本原因。同时这种设计也极大降低了协议本身的测试与形式化验证负担：归纳证明只需关心一组转移规则，而不是"快路径 + 慢路径"两套不变量。</div>
+        </div>
+      </div>
     </section>
 
     <section class="detail-layer reveal" id="layer-3">
