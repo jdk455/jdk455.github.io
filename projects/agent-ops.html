@@ -574,14 +574,15 @@
       </div>
 
       <div class="detail-section reveal">
-        <div class="detail-section-title">运维 Agent 模型微调（LLaMA-Factory 与 DeepSpeed）</div>
+        <div class="detail-section-title">运维 Agent 模型微调（LLaMA-Factory + DeepSpeed · 进行中）</div>
         <div class="detail-arch">
+          <div class="detail-arch-item"><strong>当前状态。</strong>本节描述的领域微调工作目前<strong>正在进行中</strong>，数据集与训练流水线已搭建，正在做小规模训练与调参验证，尚未跑出最终评测数据。本节仅描述"动机 / 数据 / 训练框架 / 关键配置 / 评测计划 / 部署计划"，<strong>不展示具体的提升指标</strong> —— 避免在结果出来之前提前虚报数字。</div>
           <div class="detail-arch-item"><strong>动机。</strong>通用大模型对运维领域的告警语义、降级动作语义与 MCP 工具选择存在偏差，直接 zero-shot 容易出现工具滥用、步骤遗漏或误降级。为提升 Agent 在 Plan-Execute-Replan 流程中的稳定性与领域准确率，构建专属微调数据集对底座模型进行领域增强。</div>
           <div class="detail-arch-item"><strong>数据构造。</strong>从历史告警到 Agent 决策到执行到报告的完整链路抽取约 2000 条 SFT 样本，覆盖告警 context 到诊断计划、工具调用参数生成、Replan 决策、L1/L2/L3 分级判定四类任务。所有样本经人工修正与对齐，构成 ShareGPT 风格的多轮对话数据。</div>
-          <div class="detail-arch-item"><strong>训练框架。</strong>使用 LLaMA-Factory 作为统一训练入口，支持 LoRA、QLoRA 与全参三种模式切换；底层接入 DeepSpeed ZeRO-2 与 ZeRO-3，在单机多卡（2 张 RTX 4090，48GB 显存）上完成 7B 级模型的领域微调。开启 gradient checkpointing 与 BF16 混合精度，单 epoch 训练时长约 3 小时。</div>
-          <div class="detail-arch-item"><strong>关键配置。</strong>LoRA rank=16，alpha=32，target=q_proj/k_proj/v_proj/o_proj；学习率 5e-5（cosine 衰减）；batch size 32（per-device 4 配 gradient accumulation 8）；max length 4096，适配 Plan-Execute 多轮对话上下文；DeepSpeed ZeRO-2 与 offload optimizer 缓解显存压力。</div>
-          <div class="detail-arch-item"><strong>评测指标。</strong>计划准确率（Plan 阶段输出步骤覆盖标注步骤的比率）提升约 12 个百分点；工具选择正确率（Execute 阶段调用工具与 ground truth 一致率）提升约 18 个百分点；Replan 决策一致性（与人工复盘决策一致率）提升约 9 个百分点；L1 误降级率从 baseline 的 4.2% 降至 0.6%。</div>
-          <div class="detail-arch-item"><strong>部署。</strong>微调后的 LoRA 权重通过 vLLM 与底座模型合并加载，对外暴露 OpenAI 兼容接口，作为 LangGraph Plan 与 Replan 节点的可选模型，与云端 Qwen-Max 形成本地小模型与云端大模型的混合推理架构。</div>
+          <div class="detail-arch-item"><strong>训练框架（已搭建）。</strong>使用 LLaMA-Factory 作为统一训练入口，支持 LoRA、QLoRA 与全参三种模式切换；底层接入 DeepSpeed ZeRO-2 与 ZeRO-3，在单机多卡（2 张 RTX 4090，48GB 显存）上做 7B 级模型的领域微调；开启 gradient checkpointing 与 BF16 混合精度，预估单 epoch 训练时长约 3 小时。</div>
+          <div class="detail-arch-item"><strong>关键配置（初始方案，待调参）。</strong>LoRA rank=16，alpha=32，target=q_proj/k_proj/v_proj/o_proj；学习率 5e-5（cosine 衰减）；batch size 32（per-device 4 配 gradient accumulation 8）；max length 4096，适配 Plan-Execute 多轮对话上下文；DeepSpeed ZeRO-2 与 offload optimizer 缓解显存压力。后续会按训练曲线对 rank / lr / target module 做网格调优。</div>
+          <div class="detail-arch-item"><strong>评测计划（评测集制作中，尚未跑出结果）。</strong>评测维度已定义：<strong>计划准确率</strong>（Plan 阶段输出步骤覆盖标注步骤的比率）、<strong>工具选择正确率</strong>（Execute 阶段调用工具与 ground truth 一致率）、<strong>Replan 决策一致性</strong>（与人工复盘决策一致率）、<strong>L1 误降级率</strong>。当前正在制作 hold-out 评测集（从历史告警中抽取，不与训练集重叠）。<strong>具体提升数字待训练 + 评测完成后再补充到本页，不在此提前虚报。</strong></div>
+          <div class="detail-arch-item"><strong>部署计划。</strong>训练完成后将通过 vLLM 加载 LoRA 权重并与底座模型合并，对外暴露 OpenAI 兼容接口，作为 LangGraph Plan 与 Replan 节点的可选模型，与云端 Qwen-Max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。</div>
         </div>
       </div>
     </section>
