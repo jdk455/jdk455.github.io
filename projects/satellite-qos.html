@@ -130,12 +130,122 @@
       </div>
       <div class="detail-section reveal">
         <div class="detail-section-title">星间 MAC：TDMA 4 状态超帧</div>
+
+        <!-- 5.1 选型背景 -->
         <div class="detail-section-content">
-          星间链路采用 TDMA 时分多址，每颗卫星 4 个方向独立全双工链路。MAC 模块由 4 状态机实现网络运行：init（网络初始化超帧，调度首个事件并注册统计量）→ BroadcastInfo（信息广播帧，等待 GEO / 地面站广播的拓扑表，收到后更新路由；上层业务包暂存队列，等待 TransData 再发）→ CreateLink（链路建立帧，参照拓扑表调整天线指向，向有连接的邻居发送 Hello 包）→ TransData（数据传输帧，按四级业务优先级从队列调度发包）。一个常规超帧时长约 0.18 s（BroadcastInfo 0.15 s + CreateLink 0.03 s + 数据传输），周期性循环。
+          <strong>① 为什么选 TDMA：</strong>星间链路（ISL）的两端是<strong>已知且少数</strong>的邻居卫星（每颗 LEO 仅 4 个方向，对应"前 / 后 / 左 / 右"四个固定邻居），不需要 CSMA 那种"听-讲-退避"的随机接入；同时太赫兹波束极窄、对收发同步要求极高，<strong>时隙级精确调度</strong>比统计复用更能压榨带宽。综合权衡选择 <strong>TDMA 时分多址 + 全双工</strong> —— 控制开销低、时延可预测、收发互不干扰。每颗卫星按四方向各开一条独立逻辑链路，星上有 4 套独立的 MAC 状态机并行运行（在 OPNET 实现里是四个 process model 实例 + 一套共享的本地拓扑表与队列结构）。
         </div>
+
+        <!-- 5.2 超帧结构与时隙预算 -->
+        <div class="detail-section-content" style="margin-top:18px">
+          <strong>② 超帧结构与时隙预算：</strong>一个完整<strong>超帧（Superframe）≈ 180 ms</strong>，周期循环。其中前 150 ms 留给拓扑广播（带宽小但时延敏感），中间 30 ms 留给链路建立 / Hello 探测，剩余时间全部留给数据传输 —— 这是太赫兹星间链路的典型"<strong>控制 / 数据 5:1 分配</strong>"。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">阶段</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">状态</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">时长</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">本阶段动作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:8px 14px;font-family:ui-monospace,monospace;">①</td>
+                <td style="padding:8px 14px;"><code>init</code></td>
+                <td style="padding:8px 14px;font-family:ui-monospace,monospace;">仅启动时一次</td>
+                <td style="padding:8px 14px;">初始化 4 方向天线参数、订阅 GEO / NCC 广播信道、注册仿真统计量、调度首个超帧自中断</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">②</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);"><code>BroadcastInfo</code></td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">~150 ms</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);">等待 GEO 中继下发的全网拓扑表 / 链路权重矩阵 W；收到后更新本地路由表 + 转发表；期间上层来的业务包仅入队、不出队</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">③</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);"><code>CreateLink</code></td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">~30 ms</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);">参照拓扑表对 4 方向天线做指向微调 + 多普勒补偿；向每个邻居发 Hello 包并等 ACK；ACK 超时即标记链路 DOWN，上报路由层触发重算</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">④</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);"><code>TransData</code></td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">剩余时间</td>
+                <td style="padding:8px 14px;border-top:1px solid var(--border);">按四级业务优先级从队列调度出包；TransData 结束即跳回 ② 开始下一个超帧</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5.3 四状态详细行为 -->
+        <div class="detail-section-content" style="margin-top:18px">
+          <strong>③ 四个状态的内部行为（OPNET process model 视角）：</strong>每个状态在 OPNET 里都对应一个 forced state（强制状态，进入即执行 enter executive + exit executive，然后立即跳转）或 unforced state（等待事件）。具体行为如下：
+        </div>
+        <div class="detail-arch" style="margin-top:14px">
+          <div class="detail-arch-item"><strong><code>init</code> · 初始化超帧（unforced）：</strong>
+            <br/>• 读取节点配置（轨道号、卫星编号、所属平面、4 方向邻居 ID）；
+            <br/>• 为 4 方向天线分配独立的 transmitter / receiver module 句柄；
+            <br/>• 注册接入卫星的<strong>退网中断（air_to_sat_withdraw_net）</strong>处理函数 —— 用户切换走后及时释放时隙；
+            <br/>• 调度第一个 <strong>SUPERFRAME_START 自中断</strong>，时间戳为当前仿真时刻 + 节点入网随机延迟（0~5 ms，避免全网状态机同步 lock-step）；
+            <br/>• 跳转到 <code>BroadcastInfo</code>。
+          </div>
+          <div class="detail-arch-item"><strong><code>BroadcastInfo</code> · 信息广播帧（unforced，约 150 ms）：</strong>
+            <br/>• 监听 GEO / NCC 广播信道，等待 <strong>topology_update 包</strong>到达（节点状态向量、链路权重矩阵 W、当前业务优先级表）；
+            <br/>• 收到后调用 <code>update_routing_table()</code> 刷新本地路由：① 重算下一跳；② 把 SDN 控制器下发的多径分流比 ω_m ∈ ℝᴷ 写入转发表；
+            <br/>• <strong>本阶段对上层业务包的策略</strong>：仅做入队（按 priority 进入对应队列），不出包 —— 因为路由表尚未刷新完毕，此时发包可能走错下一跳；
+            <br/>• 阶段超时 / 拓扑包到达即跳转到 <code>CreateLink</code>。
+          </div>
+          <div class="detail-arch-item"><strong><code>CreateLink</code> · 链路建立帧（unforced，约 30 ms）：</strong>
+            <br/>• 对 4 个方向逐个执行：① 查询新拓扑表中本方向邻居 ID；② 根据本卫星 + 邻居的实时位置（STK 轨道数据）计算<strong>仰角 / 方位角</strong> + <strong>多普勒频偏</strong>，下发到对应方向的太赫兹天线；③ 发送 <strong>Hello 包</strong>并启动 ACK 等待计时器（典型 5 ms）；
+            <br/>• <strong>Hello/ACK 协议</strong>是太赫兹弱连接场景的<strong>软心跳</strong> —— 用于探测窄波束因姿态扰动 / 大气湍流引起的瞬时失锁；
+            <br/>• ACK 超时即把该方向 link state 标记为 DOWN，调用 <code>notify_routing_layer_link_down()</code> 通过 GEO 上报 NCC 触发路由重构；
+            <br/>• 4 方向 Hello 全部处理完毕跳转到 <code>TransData</code>。
+          </div>
+          <div class="detail-arch-item"><strong><code>TransData</code> · 数据传输帧（unforced，约 0 ms 至超帧结束）：</strong>
+            <br/>• 进入后立即调用 <code>schedule_send()</code>，按<strong>严格优先级（Strict Priority Queueing, SPQ）</strong>从 4 个队列依次出包：实时业务（最高）→ 高可靠业务 → 弹性业务 → 尽力业务；
+            <br/>• 每出一个包：① 查转发表得下一跳方向；② 查目标方向链路 state，若 DOWN 则把包退回上层路由层让其挑备用路径（这是多径路由的局部容错点）；③ 发包到对应方向天线，更新本方向时隙占用统计；
+            <br/>• 实现里加了<strong>WRR（加权轮询）兜底</strong>避免高优先级业务永远饿死低优先级 —— 在每个超帧中给 best-effort 队列预留一个最小份额（默认 5% TransData 时长）；
+            <br/>• 阶段结束（SUPERFRAME_END 自中断到来）即<strong>跳回 <code>BroadcastInfo</code></strong>，进入下一个超帧。
+          </div>
+        </div>
+
+        <!-- 5.4 队列与调度 -->
+        <div class="detail-section-content" style="margin-top:18px">
+          <strong>④ TransData 阶段的多优先级队列调度：</strong>每方向天线对应 4 个独立 FIFO 队列（对应四级业务），出包时按下表策略调度。
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;font-size:.92rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(201,169,110,0.12);">
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">优先级</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">业务类型</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">队列容量</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">调度策略</th>
+                <th style="padding:10px 14px;text-align:left;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">超时丢弃 TTL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:8px 14px;font-family:ui-monospace,monospace;">P0（最高）</td><td style="padding:8px 14px;">实时业务（语音 / 视频会议 / 关键控制）</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">256 pkt</td><td style="padding:8px 14px;">SPQ 头部出队</td><td style="padding:8px 14px;font-family:ui-monospace,monospace;">100 ms</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">P1</td><td style="padding:8px 14px;border-top:1px solid var(--border);">高可靠业务（遥感 / 灾备 / 文件）</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">512 pkt</td><td style="padding:8px 14px;border-top:1px solid var(--border);">SPQ 次级出队</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">500 ms</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">P2</td><td style="padding:8px 14px;border-top:1px solid var(--border);">弹性业务（背景同步）</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">1024 pkt</td><td style="padding:8px 14px;border-top:1px solid var(--border);">SPQ 三级出队</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">5 s</td></tr>
+              <tr><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">P3（最低）</td><td style="padding:8px 14px;border-top:1px solid var(--border);">尽力业务（best-effort）</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">2048 pkt</td><td style="padding:8px 14px;border-top:1px solid var(--border);">WRR 兜底 ≥ 5%</td><td style="padding:8px 14px;border-top:1px solid var(--border);font-family:ui-monospace,monospace;">无 TTL</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5.5 与上层路由的接口 -->
+        <div class="detail-section-content" style="margin-top:18px">
+          <strong>⑤ 与上层路由 / SDN 控制器的接口：</strong>MAC 层不参与路径决策，只做"忠实执行 + 链路状态上报"两件事。
+          <br/>• <strong>上报通道</strong>：MAC 通过 <code>icipoll</code> 进程接口把链路 DOWN / 队列拥塞 / 时隙占用率回传给路由层，路由层经 GEO 中继上报地面 NCC；NCC 完成全网计算后通过 BroadcastInfo 阶段下发新的多径分流比 ω_m；
+          <br/>• <strong>下发通道</strong>：路由层把"下一跳方向 + 候选路径权重 ω"写入 MAC 的转发表，MAC 在 TransData 阶段按权重做<strong>包级分流</strong>（per-packet flow splitting，不是流级 hash，因此能精确逼近 RL 输出的连续动作 ω ∈ [0, 1]ᴷ）；
+          <br/>• <strong>故障切换</strong>：MAC 发现 Hello ACK 超时 → 立即把本方向所有未发包<strong>退回路由层重选路径</strong>，而不是在本节点死等 —— 这是太赫兹弱连接场景的关键容错点。
+        </div>
+
         <div style="text-align:center;margin:24px 0;">
           <img src="./img/thz_design_p51_i1.png" alt="星间 MAC TDMA 4 状态超帧状态机" style="max-width:90%;height:auto;border-radius:8px;background:#fff;padding:12px;">
-          <p style="font-size:12px;color:var(--text3);margin-top:8px;">星间 MAC 进程模型：init → BroadcastInfo → CreateLink → TransData 四状态超帧</p>
+          <p style="font-size:12px;color:var(--text3);margin-top:8px;">星间 MAC 进程模型：init → BroadcastInfo → CreateLink → TransData 四状态超帧（OPNET 14.5 process editor 截图）</p>
         </div>
       </div>
       <div class="detail-section reveal">
