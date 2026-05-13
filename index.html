@@ -204,7 +204,7 @@
         <div class="project-badge">全栈自研 · 自费部署</div>
       </div>
       <div class="project-desc">
-        在阿里云上搭建可运行的电商秒杀微服务系统，并构建 Agent 自动运维告警闭环。业务侧基于 ALB + ECS + SpringBoot + Nacos 构建秒杀链路；可观测侧基于 Prometheus + Alertmanager 采集告警；Agent 侧基于 LangGraph 构建 Plan-Execute-RePlan 多步诊断流程，结合 DashScope 大模型、MCP 工具层、Milvus 向量检索与 Runbook 知识库，实现告警驱动的根因分析与处置建议生成。同时<strong>正在使用 LLaMA-Factory + DeepSpeed</strong> 对运维 Agent 模型做领域微调（训练流水线已搭建，评测集制作中），<strong>目标</strong>是提升 Plan / 工具选择 / Replan 三阶段的领域准确率。
+        在阿里云上搭建可运行的电商秒杀微服务系统，并构建 Agent 自动运维告警闭环。业务侧基于 ALB + ECS + SpringBoot + Nacos 构建秒杀链路；可观测侧基于 Prometheus + Alertmanager 采集告警；Agent 侧基于 LangGraph 构建 Plan-Execute-RePlan 多步诊断流程，结合 DashScope 大模型、MCP 工具层、Milvus 向量检索与 Runbook 知识库，实现告警驱动的根因分析与处置建议生成。同时<strong>正在使用 LLaMA-Factory + DeepSpeed</strong> 对运维 Agent 模型做领域微调（训练流水线已搭建，评测集制作中），训练数据基于<strong>云智慧 GAIA（Generic AIOps Atlas）</strong>公开运维数据集 + 本地真实告警链路双源构造，<strong>目标</strong>是提升 Plan / 工具选择 / Replan 三阶段的领域准确率。
       </div>
       <div class="project-metrics">
         <div class="metric"><strong>P95 响应 ~70ms</strong> · 80 并发 · 2 台 2 核 4GB</div>
