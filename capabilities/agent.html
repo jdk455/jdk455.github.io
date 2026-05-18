@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>能力详情 · Agent 视角 — 蔡嘉骏</title>
-<meta name="description" content="Agent Runtime 能力详情：Gateway 网关层、Memory 记忆层（mem0 vs Claude Code）、Tool-use 工具调用与 MCP Server 安全（工具投毒、Prompt 注入）、Planning 规划层。">
+<meta name="description" content="Agent Runtime 能力详情：Gateway 网关层、Memory 记忆层（mem0 vs Claude Code）、Tool-use 工具调用与 MCP Server 安全（工具投毒、Prompt 注入）、Planning 规划层、Coordinate 多 Agent 协作层（AutoGen / CrewAI / LangGraph Supervisor / A2A 协议）。">
 <link rel="canonical" href="https://jdkjdkjdk.top/capabilities/agent.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,27 +32,28 @@
     <div class="detail-badge">能力详情 · 关于我 · 视角 01</div>
     <h1 class="detail-title serif">从 Agent 视角：Agent Runtime 架构</h1>
     <p class="detail-desc reveal">
-      Agent 不是"加了 LLM 的应用"，而是一类全新的运行时（Runtime）：它需要决定如何接入外部世界、如何记住过去、如何调用工具、如何把模糊意图拆解为可执行计划。我所理解并实践的 Agent Runtime 由四个核心组件构成 —— <strong>Gateway 网关层、Memory 记忆层、Tool-use 工具调用层、Planning 规划层</strong>。这四层共同决定了 Agent 在生产环境中的可用性、可靠性与安全性。本页对每一层都展开"典型架构 + 对比 + 个人理解"的论述，同时把 Tool-use 部分作为重点，深入讨论 MCP Server 在工具投毒与 Prompt 注入两类攻击下的安全模型。
+      Agent 不是"加了 LLM 的应用"，而是一类全新的运行时（Runtime）：它需要决定如何接入外部世界、如何记住过去、如何调用工具、如何把模糊意图拆解为可执行计划，最后还要决定何时把任务分给多个 Agent 协作。我所理解并实践的 Agent Runtime 由五个核心组件构成 —— Gateway 网关层、Memory 记忆层、Tool-use 工具调用层、Planning 规划层、Coordinate 多 Agent 协作层。前四层决定单 Agent 在生产环境中的可用性、可靠性与安全性；第五层决定 Agent 系统能否突破单体智能的天花板，从"个体智能"演进到"群体智能"。Tool-use 与 Coordinate 是当前最值得深挖的两层 —— 前者关乎 MCP Server 的安全边界，后者关乎 AutoGen / CrewAI / LangGraph / A2A 协议等 Multi-Agent 主流路径的取舍。
     </p>
 
     <!-- ===================== Capability Mindmap ===================== -->
     <div class="mindmap reveal">
-      <div class="mindmap-title">能力思维导图 · Agent Runtime 四层架构</div>
+      <div class="mindmap-title">能力思维导图 · Agent Runtime 五层架构</div>
       <div class="mindmap-wrap">
-        <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Agent Runtime 能力思维导图">
+        <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Agent Runtime 能力思维导图">
           <!-- connection trunk -->
           <g fill="none" stroke="#C9A96E" stroke-width="1.3" opacity="0.55">
-            <path d="M 210 250 H 250"/>
-            <path d="M 250 60 V 440"/>
+            <path d="M 210 300 H 250"/>
+            <path d="M 250 60 V 560"/>
             <path d="M 250 60 H 280"/>
             <path d="M 250 180 H 280"/>
             <path d="M 250 300 H 280"/>
             <path d="M 250 420 H 280"/>
+            <path d="M 250 540 H 280"/>
           </g>
           <!-- Root node -->
-          <rect x="30" y="210" width="180" height="80" rx="12" fill="#C9A96E" opacity="0.92"/>
-          <text x="120" y="246" text-anchor="middle" fill="#0a0a0a" font-weight="700" font-size="17">Agent Runtime</text>
-          <text x="120" y="268" text-anchor="middle" fill="#0a0a0a" font-size="11.5" opacity="0.75">运行时四层架构</text>
+          <rect x="30" y="260" width="180" height="80" rx="12" fill="#C9A96E" opacity="0.92"/>
+          <text x="120" y="296" text-anchor="middle" fill="#0a0a0a" font-weight="700" font-size="17">Agent Runtime</text>
+          <text x="120" y="318" text-anchor="middle" fill="#0a0a0a" font-size="11.5" opacity="0.75">运行时五层架构</text>
           <!-- ① Gateway -->
           <rect x="280" y="40" width="220" height="40" rx="20" fill="rgba(201,169,110,0.10)" stroke="#C9A96E" stroke-width="1.3"/>
           <text x="390" y="65" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="13">① Gateway 网关层</text>
@@ -79,6 +80,13 @@
           <text x="520" y="418" fill="#a8a8a8" font-size="11.5">• Plan-Execute-Replan ★（主线，LangGraph）</text>
           <text x="520" y="436" fill="#a8a8a8" font-size="11.5">• Tree-of-Thoughts / Graph-of-Thoughts</text>
           <text x="520" y="454" fill="#a8a8a8" font-size="11.5">• 框架对比：AutoGen · CrewAI · Hermes</text>
+          <!-- ⑤ Coordinate -->
+          <rect x="280" y="520" width="220" height="40" rx="20" fill="rgba(201,169,110,0.10)" stroke="#C9A96E" stroke-width="1.3"/>
+          <text x="390" y="545" text-anchor="middle" fill="#C9A96E" font-weight="700" font-size="13">⑤ Coordinate 多 Agent 协作</text>
+          <text x="520" y="520" fill="#a8a8a8" font-size="11.5">• 拓扑：Hierarchical · Network · Pipeline · Voting</text>
+          <text x="520" y="538" fill="#a8a8a8" font-size="11.5">• 框架：AutoGen · CrewAI · LangGraph Supervisor</text>
+          <text x="520" y="556" fill="#a8a8a8" font-size="11.5">• Claude Code Sub-agent ★（实战）</text>
+          <text x="520" y="574" fill="#a8a8a8" font-size="11.5">• A2A Protocol（Google 2025-04，跨厂商标准）</text>
         </svg>
       </div>
       <div class="mindmap-caption">从 Agent 入口到执行落地的四层运行时 ▸ ★ = 已在项目中实战 ▸ ⚠ = 重点安全研究方向</div>
@@ -302,14 +310,64 @@
       </div>
 
       <div class="detail-section reveal">
-        <div class="detail-section-title">四层协同 —— 完整 Agent Runtime 视图</div>
+        <div class="detail-section-title">单 Agent 视图 —— Gateway / Memory / Tool-use / Planning 四层协同</div>
         <div class="detail-section-content">
-          一次完整的 Agent 调用：用户请求经 <strong>Gateway</strong> 进入系统，绑定会话上下文；<strong>Memory</strong> 召回相关长期事实拼入 Prompt；<strong>Planning</strong> 层产出步骤序列；每一步调用 <strong>Tool-use</strong> 层暴露的 MCP 工具，工具结果经"信任边界"包装回到 Memory 与 Planner，触发下一轮规划或 Replan。这四层环环相扣，去掉任何一层 Agent 都会退化 —— 没有 Gateway 就没有可治理性，没有 Memory 就没有长期一致性，没有 Tool-use 就没有"对世界的双手"，没有 Planning 就没有"对未来的眼睛"。
+          一次完整的单 Agent 调用：用户请求经 Gateway 进入系统，绑定会话上下文；Memory 召回相关长期事实拼入 Prompt；Planning 层产出步骤序列；每一步调用 Tool-use 层暴露的 MCP 工具，工具结果经"信任边界"包装回到 Memory 与 Planner，触发下一轮规划或 Replan。但当任务复杂度上升（领域跨度大、上下文超出单 Agent 窗口、需要并发处理多个独立分支）时，单 Agent 必然碰到天花板 —— 这时就需要进入第五层：多 Agent 协作。
         </div>
       </div>
     </section>
 
+    <!-- ===================== Layer 5: Coordinate (Multi-Agent) ===================== -->
     <section class="detail-layer reveal" id="layer-5">
+      <h2 class="detail-layer-title">Coordinate 多 Agent 协作层 —— 当单 Agent 不够用时</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">为什么单 Agent 总会撞到天花板</div>
+        <div class="detail-section-content">
+          单 Agent 即使 Memory + Tool-use + Planning 都做到极致，仍然有三个硬约束：上下文窗口（哪怕 1M token 也有上限）、领域知识广度（一个 Agent 不可能既懂分布式存储又懂前端 SEO）、并发能力（一次只能跑一条思考链）。Coordinate 层把单 Agent 的"独白"升级为多 Agent 的"对话与分工"，让任务沿着拓扑结构展开 —— 这是 Agent 工程从"个体智能"迈向"群体智能"的必经一步。业界共识来自 Anthropic 2024-2025 的多篇研究（Constitutional AI 多 Agent、Sub-agent 模式）、Google A2A 协议（2025-04 推出的 Agent-to-Agent 通信标准）、与 Microsoft AutoGen 的演化路径。
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">协作拓扑 · 四种主流模式</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>① Hierarchical 层级式（Manager / Worker / Critic）。</strong>一个 Supervisor Agent 接收任务，拆解为子任务派发给若干 Worker Agent 并行执行，结果聚合后由 Critic Agent 评审。代表实现：CrewAI 的 Crew + Process.hierarchical、LangGraph Supervisor pattern、Claude Code 的 sub-agent 委派。优势是控制流清晰、易于追责；劣势是 Supervisor 容易成为瓶颈或单点故障。</div>
+          <div class="detail-arch-item"><strong>② Networked / Peer-to-Peer 网状对话。</strong>多个对等 Agent 在共享上下文里轮流发言，由 Manager 决定下一个发言者。代表实现：AutoGen GroupChat / RoundRobinChat、CAMEL Society。优势是表达直觉（像开会）、容易引入 Critic 角色互相挑错；劣势是 token 成本失控、易陷入"互相恭维"或"无限循环"。</div>
+          <div class="detail-arch-item"><strong>③ Sequential / Pipeline 流水线。</strong>任务在 Agent A → Agent B → Agent C 之间顺序流转，每个 Agent 只负责一道工序（如 Researcher → Writer → Editor）。代表实现：CrewAI Process.sequential、LangGraph StateGraph 单向边。优势是简单、可重复、易调试；劣势是无并发、整体延迟 = 各 Agent 之和。</div>
+          <div class="detail-arch-item"><strong>④ Voting / Multi-Path 多路并行 + 投票。</strong>同一任务交给 N 个 Agent 用不同策略并行求解，结果由 Verifier 或多数投票选出最优。代表实现：Self-Consistency CoT、AlphaCode 风格的代码合成、Tree-of-Thoughts。优势是答案质量天花板高；劣势是 token 成本爆炸（n 倍）。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Agent Team 的核心抽象 · 五件事必须想清楚</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>角色定义（Role）。</strong>每个 Agent 是 generalist 还是 specialist？是否绑定特定工具集？是否绑定特定底座模型（如 Planner 用 Opus，Worker 用 Haiku 省钱）？角色边界划清才能避免"全员万能"的失败模式。</div>
+          <div class="detail-arch-item"><strong>通信协议（Protocol）。</strong>Agent 之间传 plain text 还是结构化消息？是否使用 Google 2025-04 推出的 A2A（Agent-to-Agent）协议作为跨厂商通信标准？是否支持流式 token 透传？这层协议直接决定了系统能否做到"换厂商不换胶水代码"。</div>
+          <div class="detail-arch-item"><strong>上下文隔离（Context Isolation）。</strong>所有 Agent 共享同一份 chat history（成本高、易污染）还是各自维护私有 context（信息丢失风险）？Anthropic 的 sub-agent 设计采用"父 Agent 给 child 一个独立 context window + 只回传 final answer"的混合策略，是当前比较稳健的工程实践。</div>
+          <div class="detail-arch-item"><strong>状态共享（Shared State）。</strong>Hierarchical 模式下 Supervisor 如何看到 Workers 的中间产物？是用 blackboard pattern（共享内存）还是用 message passing（事件总线）？LangGraph 的 Reducer 函数提供了显式声明 state 合并语义的能力，是当前我观察到最干净的抽象。</div>
+          <div class="detail-arch-item"><strong>失败处置（Failure Handling）。</strong>一个 Worker 卡住了整个 Crew 怎么办？是否支持超时、重试、降级（fallback 到 generalist Agent）？是否引入 Critic Agent 在每一步后做"sanity check"？业界还没有统一答案，但所有严肃的 Multi-Agent 系统都必须显式回答这五个问题。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">主流框架对比</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>AutoGen / AG2（Microsoft Research）。</strong>多 Agent 对话式框架，核心抽象是 GroupChat + Manager。生态最成熟、研究论文最多，是学界 baseline。劣势是非对话式任务被硬塞进对话外壳，工程化部署门槛偏高。</div>
+          <div class="detail-arch-item"><strong>CrewAI。</strong>角色化协作，核心抽象是 Agent / Task / Crew + Process（sequential / hierarchical）。语义最简洁，30 分钟能跑通第一个 multi-agent demo，适合产品原型。劣势是定制能力受限、可观测性弱。</div>
+          <div class="detail-arch-item"><strong>LangGraph Supervisor / Swarm。</strong>把多 Agent 表达为显式 StateGraph，Supervisor 是一个特殊节点，负责把下一个动作路由到合适的 Worker。优势是与 LangGraph 单 Agent 模式完全同构（同一套 checkpointer / human-in-the-loop / 事件流），适合从单 Agent 平滑演进到多 Agent 的工程项目。</div>
+          <div class="detail-arch-item"><strong>Claude Code Sub-agent（Anthropic）。</strong>把 sub-agent 设计为"父 Agent 主动委派的独立 context 任务"，每个 sub-agent 有自己的 system prompt、工具集与上下文窗口，完成后只回传 final answer。是目前我用得最多、感觉最契合 Anthropic Capability 安全模型的范式。</div>
+          <div class="detail-arch-item"><strong>A2A Protocol（Google，2025-04）。</strong>跨厂商的 Agent-to-Agent 通信协议（基于 HTTP + Server-Sent Events），目标是让不同厂商、不同框架的 Agent 能互相发现、协商、协作。这是 Coordinate 层从"框架内部 API"走向"跨组织标准"的第一步，类似当年 MCP 之于 Tool-use 层的位置。</div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">个人理解与下一步实践</div>
+        <div class="detail-section-content">
+          单 Agent 是"个体智能"的极致，Coordinate 层把它升级为"群体智能"。在我的 <a href="../projects/agent-ops.html">电商秒杀 Agent 运维项目</a> 中，目前是单 Agent Plan-Execute-Replan；下一步演进路径是引入 Critic Agent 在 Replan 节点做 sanity check（避免主 Agent 误降级），以及在容量基线 + 故障注入实验中引入"专攻业务层"和"专攻可观测层"两个 specialist Worker —— 这两个改动都属于 Coordinate 层的工程问题，而不是单 Agent 内部优化能解决的。在框架选择上我倾向 LangGraph Supervisor 路径（从单 Agent 平滑演进，避免框架切换成本）；在协议层我会关注 A2A 的演进，因为跨厂商互通才是 Agent 真正能与互联网级系统对齐的前提。
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-layer reveal" id="layer-6">
       <h2 class="detail-layer-title">技术栈与延伸阅读</h2>
       <div class="detail-section reveal">
         <div class="detail-section-title">本页涉及的技术栈</div>
@@ -319,6 +377,9 @@
           <span class="tag">MCP (Model Context Protocol)</span><span class="tag">JSON-RPC</span><span class="tag">Tool Poisoning</span><span class="tag">Prompt Injection</span>
           <span class="tag">LangGraph</span><span class="tag">AutoGen</span><span class="tag">CrewAI</span><span class="tag">Hermes Agent Runtime</span>
           <span class="tag">Plan-Execute-Replan</span><span class="tag">ReAct</span><span class="tag">Tree-of-Thoughts</span>
+          <span class="tag">AutoGen GroupChat</span><span class="tag">CrewAI</span><span class="tag">LangGraph Supervisor</span><span class="tag">LangGraph Swarm</span>
+          <span class="tag">Claude Code Sub-agent</span><span class="tag">A2A Protocol (Google 2025-04)</span><span class="tag">CAMEL Society</span>
+          <span class="tag">Multi-Agent Coordinate</span><span class="tag">Manager-Worker-Critic</span><span class="tag">Self-Consistency CoT</span>
         </div>
       </div>
 

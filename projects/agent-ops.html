@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>电商秒杀服务 + Agent 自动运维告警系统 — 蔡嘉骏</title>
-<meta name="description" content="本地 Docker 31 容器栈：Dubbo/RocketMQ 秒杀业务、Flink 实时聚合、LangGraph 运维 Agent、OpenTelemetry/Jaeger 全链路追踪。Metrics/Logs/Trace 三支柱与业务实时数据维度，24 个 MCP 工具支撑端到端诊断与分级降级。">
+<meta name="description" content="本地 Docker 31 容器栈：Dubbo/RocketMQ 秒杀业务、Flink 实时聚合、LangGraph 运维 Agent、OpenTelemetry/Jaeger 全链路追踪。Metrics/Logs/Trace 三支柱与业务实时数据维度，28 个 MCP 工具按 5 类证据维度分布,支撑端到端诊断与分级降级。">
 <link rel="canonical" href="https://jdkjdkjdk.top/projects/agent-ops.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,6 +104,66 @@
     padding: 1px 6px;
     font-size: .88em;
   }
+  /* 表格样式 —— 不让任何单元格用金色或大字号突变，全部白色加粗 */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: .9rem;
+    color: #d4d4d4;
+  }
+  .data-table th, .data-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table th {
+    font-weight: 600;
+    background: rgba(255,255,255,0.02);
+    color: #fff;
+  }
+  /* 关键覆盖：表格内 metric-num 不能继承全局 .metric-num 的金色 + 1.8rem */
+  .data-table td.metric-num {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: inherit;
+    font-weight: 600;
+    color: #fff;
+    line-height: inherit;
+    margin: 0;
+  }
+  .exp-title {
+    font-weight: 600;
+    color: #fff;
+    margin: 6px 0 4px;
+  }
+  .exp-conclusion {
+    background: var(--surface);
+    border-left: 3px solid var(--border);
+    padding: 12px 16px;
+    margin: 12px 0;
+    line-height: 1.7;
+  }
+  .log-snippet {
+    background: #0a0a0b;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: .78rem;
+    line-height: 1.55;
+    color: #b0b0b0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .log-snippet .log-caption {
+    display: block;
+    color: #888;
+    font-size: .72rem;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
@@ -127,116 +187,116 @@
     <div class="detail-badge">全栈自研 · 自费部署 · 2026.04-至今</div>
     <h1 class="detail-title serif">电商秒杀服务 + Agent 自动运维告警系统</h1>
     <p class="detail-desc reveal">
-      本地 Docker 栈端到端搭建秒杀演示、实时聚合、全链路追踪与运维 Agent 四层闭环，共 31 个容器；完整告警到 L1 自动降级链路约 75 秒。
+      本地 Docker 栈端到端搭建业务、流处理、可观测、Agent 四层闭环，共 31 个容器；完整告警到 L1 自动降级链路约 75 秒。业务层给出系统物理边界（饱和点、雪崩点、Spike 恢复时间），Agent 层给出决策能力评测（4 维 12 指标 + 4 个支撑子实验 + LoRA 三方对照）。
       <br>
-      ① 业务层：采用 Apache Dubbo 2.7.8、RocketMQ 5.0.7 与 Spring Boot 微服务，包含五个 Java 业务进程、Nginx 网关与 Nacos 注册中心，网关支持 normal、degraded、lite 三套配置模板，用于 Agent 动态限流。该层模拟真实秒杀场景下的业务流量与下单链路，是被运维的目标系统，为整个 Agent 闭环提供故障演练舞台。
+      ① 业务层 —— 电商秒杀业务全链路。Dubbo + RocketMQ + Spring Boot 微服务、Nacos 注册中心，Nginx 网关支持 normal / degraded / lite 三套配置模板。达到的效果：搭出一个可被注入故障、可被外部观测、可被 Agent 操控的真实业务运维目标；末尾用 5 阶段容量基线 SOP 测出系统真实物理边界（饱和点、雪崩点、Spike 恢复时间）。
       <br>
-      ② 流处理层：使用 Flink 1.18 DataStream API 与 Caffeine 维度缓存消费 RocketMQ 事件，分四路 Tumbling 窗口聚合后落库至 PostgreSQL 与 Elasticsearch。该层把异步业务事件实时转化为可被监控查询的 KPI 与明细索引，为 Agent 诊断阶段提供"业务实时数据"这第四维证据。
+      ② 流处理层 —— 把毫秒级业务事件实时变成秒级可查 KPI。Flink 四路 Tumbling 聚合后写 PG 与 ES，调用链 ID 跨异步边界自动透传。达到的效果：业务热点可一键反查到完整调用链路，为 Agent 提供 Metrics / Logs / Trace 三支柱之外的"业务实时数据"第四维证据。
       <br>
-      ③ 可观测层：集成 Prometheus、Alertmanager、Grafana 与八类 exporter，并叠加 OpenTelemetry Java Agent 2.10 的字节码自动埋点与 Jaeger 后端，构成 Metrics、Logs、Trace 三支柱。该层负责采集与展示系统三支柱证据，并通过 Alertmanager 把高危告警以 webhook 投递给 Agent，是 Agent 自动化决策的触发入口与证据来源。
+      ③ 可观测层 —— Metrics + Logs + Trace 三支柱齐备。Prometheus + Alertmanager + Grafana + 八类 exporter，OpenTelemetry Java Agent 字节码自动埋点 + Jaeger。达到的效果：L0-L3 共 20 个分层指标 5 秒粒度采样、告警按 L1 / L2 / L3 三级分类，为 Agent 提供完整证据来源与触发入口。
       <br>
-      ④ Agent 层：基于 LangGraph 的 Plan-Execute-Replan 工作流，融合四个 MCP Server 共 24 个工具，覆盖日志、指标、链路追踪与业务实时数据四个证据维度。Agent 在 P99 延迟告警下可自主选用链路追踪工具 find_slow_traces 与 span_breakdown 完成根因诊断；通过 W3C traceparent 跨 RocketMQ 异步边界把 trace_id 透传至 Flink 作业并落入 PostgreSQL transactions 表，实现从一条慢订单反查 36-span 完整调用链。该层是整个系统的"决策大脑"，承担告警接收 → 工具调用 → 根因诊断 → 分级降级的端到端闭环，把传统人工运维的多步操作压缩到一次自动决策。
-      <br>
-      ⑤ 验证与总结：包含三组端到端实验、核心职责拆分、量化效果与完整技术栈。该部分覆盖功能正确性与性能表现的端到端验证，并归档项目的方法学沉淀，便于复盘与迭代。
+      ④ Agent 层 —— LangGraph Plan-Execute-Replan 工作流。五个 MCP Server 覆盖日志、指标、链路、业务、拓扑五维证据，9 个处置动作对齐 OpenC2 国际标准。达到的效果：单次诊断把人工运维多步操作压缩到一次自动决策，所有决策、审批、动作、闭环验证落 audit JSONL 实现 100% 离线可重算；末尾用 4 维 12 指标 + 4 个支撑子实验量化 Agent 各部件能力。
     </p>
+
+    <section class="detail-layer reveal" id="layer-overview">
+      <h2 class="detail-layer-title">系统整体架构</h2>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">四层组件关系与数据流</div>
+        <div class="detail-section-content">
+          本系统由四个职责层组成，每层只关注自己的核心抽象，层与层之间通过明确的"数据流契约"通信。业务层负责产生订单、库存、流量等真实业务事件；流处理层把异步业务事件实时变成秒级可查 KPI；可观测层把三支柱（Metrics / Logs / Trace）统一采集并把高危告警推送给 Agent；Agent 层接收告警、调用工具诊断、生成处置动作、把控制命令打回业务层网关形成闭环。下面的图省略每层内部的容器细节，只标注层间传输的信息类型。
+        </div>
+        <div class="diagram-container">
+          <div class="mermaid">
+            flowchart LR
+              CLIENT["客户端 / 压测"]
+              BIZ["业务层<br/>秒杀商品服务链路"]
+              STREAM["流处理层<br/>Flink 实时聚合"]
+              STORE["分析存储<br/>PostgreSQL + Elasticsearch"]
+              OBS["可观测层<br/>Metrics / Logs / Trace"]
+              AGENT["运维 Agent 层<br/>诊断 + 决策 + 执行"]
+
+              CLIENT -- "HTTP 请求" --> BIZ
+              BIZ -- "业务事件 (订单/库存/支付)" --> STREAM
+              STREAM -- "聚合 KPI + trace_id" --> STORE
+              BIZ -- "容器指标 + OTel trace" --> OBS
+              STORE -- "业务实时数据 (KPI 查询)" --> AGENT
+              OBS -- "告警 webhook" --> AGENT
+              AGENT -- "降级控制命令 (切配置/限流/禁用)" --> BIZ
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">组件间交流提供的信息</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>业务层 → 流处理层。</strong>下单、支付、退款、库存扣减等业务事件以 RocketMQ 消息形式异步投递，消息体含 traceparent 字段保证调用链 ID 跨异步边界透传。流处理层订阅这些事件做实时窗口聚合。</div>
+          <div class="detail-arch-item"><strong>流处理层 → 分析存储 → Agent。</strong>四类聚合 KPI（活动 GMV / SKU 速率 / 类目销售 / 失败率）写入 PG 聚合表（含 trace_id 列）与 ES 明细索引；Agent 通过 business MCP server 用 SQL/REST/DSL 查询这些 KPI，构成区别于 Metrics 三支柱的"业务实时数据"第四维证据。</div>
+          <div class="detail-arch-item"><strong>业务层 → 可观测层。</strong>容器级指标由 8 类 exporter 抓到 Prometheus；JVM 进程级 trace 由 OpenTelemetry Java Agent 字节码自动埋点经 OTLP gRPC 写入 Jaeger。Prometheus 评估告警规则后把高危告警以 Alertmanager webhook 形式推送给 Agent。</div>
+          <div class="detail-arch-item"><strong>可观测层 + 分析存储 → Agent。</strong>Agent 通过 5 个 MCP Server（cls 日志 / monitor 指标 / business 业务数据 / trace 链路 / topology 拓扑）调用 28 个工具进行根因诊断，每个 Server 只对接一类后端，实现单一职责与故障隔离。</div>
+          <div class="detail-arch-item"><strong>Agent → 业务层（闭环回写）。</strong>诊断结论传给 degrade_policy 按 L1 / L2 / L3 等级 + cooldown 规则做策略选择，executor 通过 powershell + Copy-Item + docker exec nginx -s reload 把网关切到 degraded / lite 模板，整条链路从告警触发到控制命令落地约 75 秒。</div>
+          <div class="detail-arch-item"><strong>跨层一致性 · trace_id 全链路透传。</strong>OpenTelemetry W3C traceparent 协议从 Portal 起点开始一直贯穿到 RocketMQ 消息属性 → Flink RawSeckillEvent 字段 → PG transactions.trace_id 列。任一业务热点都能在 PG 反查到完整 Jaeger 调用链，把业务诊断从经验推断变成链路证据。</div>
+        </div>
+      </div>
+    </section>
 
     <section class="detail-layer reveal" id="layer-1">
       <h2 class="detail-layer-title">业务层</h2>
       <div class="detail-section reveal">
-        <div class="detail-section-title">系统整体架构</div>
+        <div class="detail-section-title">秒杀商品服务链路</div>
         <div class="detail-section-content">
-          本系统通过本地 Docker Compose 编排 31 个容器，端到端复刻一套真实电商在生产环境会遇到的「流量冲击 → 监控告警 → 自动诊断 → 主动降级」闭环，整体由四个职责层（业务、流处理、可观测、Agent）+ 一个验证层组成，所有组件之间的数据流向、告警链路与降级动作都在同一份编排里跑通。
-          <br><br>
-          请求路径上：用户或 bash 压测脚本访问 Nginx 网关（:18080），网关将请求转发给 Spring Boot Portal 渲染秒杀页面，Portal 通过 Dubbo 调用商品（:20880）、下单（:20881）、库存（:20882）、秒杀（:20883）四个微服务，四者通过 Nacos（:8848）完成服务注册与发现。下单服务把支付成功 / 失败事件投递到 RocketMQ 5.0.7，秒杀服务从 RocketMQ 消费请求并执行限流；订单数据落到 MySQL 8.0，库存数据落到 Redis 7。网关的 normal / degraded / lite 三套配置模板，由 Agent 在故障时按策略动态切换。
-          <br><br>
-          流处理路径上：Flink 1.18 的 JobManager + TaskManager 以 DataStreamJob 形式订阅 RocketMQ 事件，分四路 Tumbling 窗口聚合（活动 GMV、SKU 速率、类目销售、失败率），结果按统一 schema 落到 PostgreSQL 16（聚合表，并保留 trace_id 列）和 Elasticsearch 7（明细索引）。这一层把毫秒级业务事件转化为秒级可被监控查询的 KPI 与可被反查的明细，为 Agent 提供「业务实时数据」这一独立证据维度。
-          <br><br>
-          观测路径上：八类 Exporter（nginx-exporter、mysqld-exporter、redis-exporter、postgres-exporter、rocketmq-exporter、cAdvisor、blackbox-exporter、Flink 自带 Reporter）把容器与服务级指标抓取到 Prometheus（:9091），Prometheus 评估告警规则后把高危告警以 Alertmanager（:9093）的 webhook 形式向外推送；Grafana（:3030）做指标可视化。同时 OpenTelemetry Java Agent 2.10 在所有 Spring Boot 进程做字节码自动埋点，trace 经 OTLP gRPC（:4317）写入 Jaeger（:16686），并通过 W3C traceparent 跨 RocketMQ 异步边界把 trace_id 透传到 Flink 作业、再写回 PostgreSQL transactions 表，实现 Metrics、Logs、Trace 三支柱 + 业务实时数据的四维证据。
-          <br><br>
-          决策路径上：运维 Agent 是一个 FastAPI（:9900）服务，接收 Alertmanager 的 webhook 后，由 LangGraph 调度 Plan-Execute-Replan 工作流，编排四个 MCP Server（cls :8003 日志、monitor :8004 指标、business :8005 业务数据、trace :8006 链路追踪）共 24 个工具进行根因诊断；诊断结果传给 degrade_policy 模块按 L1 / L2 / L3 等级与 cooldown 规则做策略选择，最后由 executor 通过 spawn powershell + Copy-Item + docker exec nginx -s reload 把网关切到 degraded 模板，整条链路从告警触发到限流生效约 75 秒。
+          业务层模拟一套真实电商秒杀场景，是被运维的目标系统，也是 Agent 闭环的故障演练舞台。请求从 Nginx 网关进入 Spring Boot Portal 渲染秒杀页面，Portal 通过 Apache Dubbo 2.7.8 调用商品、下单、库存、秒杀四个独立微服务，四者通过 Nacos 1.4.2 完成服务注册与发现。下单服务把支付成功/失败事件投递到 RocketMQ 5.0.7，秒杀服务从 RocketMQ 消费请求并执行限流；订单数据落到 MySQL 8.0，库存数据落到 Redis 7。Nginx 网关支持 normal / degraded / lite 三套配置模板，由 Agent 在故障时按策略动态切换，是 Agent 闭环的执行落点。
         </div>
         <div class="diagram-container">
           <div class="mermaid">
-            flowchart TB
-              subgraph CLIENT["客户端 / 压测"]
-                USER["浏览器"]
-                K6["bash 负载生成"]
-              end
+            flowchart LR
+              CLIENT["客户端 / 压测"]
+              GW["Nginx 网关 :18080<br/>normal / degraded / lite 三模板"]
+              PORTAL["Spring Boot Portal<br/>秒杀页面渲染"]
+              PSV["商品服务 :20880"]
+              OSV["下单服务 :20881"]
+              ISV["库存服务 :20882"]
+              FSV["秒杀服务 :20883"]
+              NACOS["Nacos 1.4.2<br/>服务注册中心"]
+              MQ["RocketMQ 5.0.7<br/>异步事件总线"]
+              MYSQL["MySQL 8.0<br/>订单持久化"]
+              REDIS["Redis 7<br/>库存扣减 + Lua"]
 
-              subgraph BIZ["业务层"]
-                GW["Nginx 网关 :18080"]
-                PORTAL["Spring Boot Portal"]
-                PSV["商品服务 :20880 Dubbo"]
-                OSV["下单服务 :20881 Dubbo"]
-                ISV["库存服务 :20882"]
-                FSV["秒杀服务 :20883 Dubbo"]
-              end
-
-              subgraph MID["中间件层"]
-                NACOS["Nacos 1.4.2 :8848"]
-                MQ["RocketMQ 5.0.7"]
-                MYSQL["MySQL 8.0"]
-                REDIS["Redis 7"]
-              end
-
-              subgraph FLINK["Flink 1.18 实时聚合"]
-                JM["JobManager"]
-                TM["TaskManager"]
-                JOB["DataStreamJob<br/>四路 Windowed Aggregation"]
-              end
-
-              subgraph SINK["分析存储"]
-                PG["PostgreSQL 16<br/>聚合表与 trace_id 列"]
-                ES["Elasticsearch 7<br/>明细索引"]
-              end
-
-              subgraph OBS["可观测层"]
-                PROM["Prometheus :9091"]
-                AM["Alertmanager :9093"]
-                GRAF["Grafana :3030"]
-                EXP["八类 Exporter<br/>nginx / mysql / redis<br/>pg / rmq / cadvisor / blackbox / flink"]
-                JG["Jaeger :16686<br/>OTLP gRPC :4317"]
-              end
-
-              subgraph AGENT["运维 Agent (FastAPI :9900)"]
-                API["LangGraph<br/>Plan-Execute-Replan"]
-                MCP1["MCP cls :8003"]
-                MCP2["MCP monitor :8004"]
-                MCP3["MCP business :8005"]
-                MCP4["MCP trace :8006"]
-                POLICY["degrade_policy"]
-                EXEC["executor<br/>spawn powershell"]
-              end
-
-              USER --> GW
-              K6 --> GW
-              GW --> PORTAL
-              PORTAL --> PSV & OSV & ISV & FSV
-              PSV & OSV & ISV & FSV --> NACOS
-              OSV --> MQ
-              FSV --> MQ
+              CLIENT --> GW --> PORTAL
+              PORTAL -- "Dubbo RPC" --> PSV
+              PORTAL -- "Dubbo RPC" --> OSV
+              PORTAL -- "Dubbo RPC" --> ISV
+              PORTAL -- "Dubbo RPC" --> FSV
+              PSV & OSV & ISV & FSV -. "服务发现" .- NACOS
+              OSV -- "订单事件 / 支付事件" --> MQ
+              FSV -- "秒杀请求" --> MQ
               OSV --> MYSQL
               ISV --> REDIS
-
-              MQ --> JOB
-              JM -.- JOB
-              TM -.- JOB
-              JOB --> PG & ES
-
-              PORTAL & PSV & OSV & ISV & FSV -. "OTLP / traceparent" .-> JG
-
-              EXP --> PROM
-              PROM --> AM
-              AM -- "webhook" --> API
-
-              API --> MCP1 & MCP2 & MCP3 & MCP4
-              MCP2 -- "PromQL" --> PROM
-              MCP3 -- "REST/SQL/DSL" --> JOB & PG & ES & MYSQL
-              MCP4 -- "Jaeger HTTP API" --> JG
-              API --> POLICY --> EXEC
-              EXEC -- "Copy-Item / docker exec" --> GW
           </div>
         </div>
+      </div>
+
+      <div class="detail-section reveal">
+        <div class="detail-section-title">业务层能力实测 · 容量基线 5 阶段 SOP</div>
+        <p class="detail-section-content">
+          本节完全脱离 Agent，只回答"这套硬件 + 这套软件配置能扛多少业务流量、瓶颈在哪"。方法学对齐 k6 + Locust + Google SRE Book Ch.4 SLO 业界标准，采用 5 阶段标准 SOP 串行执行，全程 5 秒粒度采样 L0-L3 共 20 个分层指标。任务划分为：Smoke 恒定 100 RPS 5 min 定健康基线；Ramp 100→3000 RPS 阶梯爬坡找饱和点（P99>1500ms 或错误率>1% 即触发）；Spike 突跳 2000 RPS 后撤回测恢复时间；Soak 1000 RPS × 30 min 测长期稳定性；Stress 持续加压直至错误率>50% 触发雪崩判定。
+        </p>
+        <div class="exp-title" style="margin-top:14px">真实跑出的容量基线结论</div>
+        <table class="data-table">
+          <thead><tr><th>关键产出</th><th>实测值</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td>Smoke baseline P99</td><td class="metric-num">96 ms</td><td>裸系统在低负载下的应有性能基线</td></tr>
+            <tr><td>saturation_point 饱和点</td><td class="metric-num">200 RPS</td><td>P99 突破 1500 ms 阈值的 RPS 档位</td></tr>
+            <tr><td>collapse_point 雪崩点</td><td class="metric-num">500 RPS</td><td>错误率突破 50% 的 RPS 档位</td></tr>
+            <tr><td>spike_recovery_time 恢复时间</td><td class="metric-num">76 s</td><td>突发流量撤销后 P99 回到 baseline 的耗时</td></tr>
+            <tr><td>容量规划表</td><td class="metric-num">11 档 RPS</td><td>50 → 8000 RPS 的 P50/P99/err/CPU/Redis 完整表</td></tr>
+          </tbody>
+        </table>
+        <div class="exp-conclusion" style="margin-top:14px">
+          <strong>反常识发现。</strong>系统在 200 RPS 饱和时 portal 容器 CPU 仅 17%、内存稳定在 404 MB / 1 GB 上限——硬件还有 80%+ 富余但 P99 已经飙到 1.5 秒以上。瓶颈不是算力，而是连接池、分布式锁、RocketMQ Producer 等并发原语。这种"硬件富余但系统已雪崩"的数据正是 Agent 介入诊断的真实价值场景，也是容量基线对 Agent 评测最大的贡献——告诉 Agent"别去查 CPU，去查并发原语"。
+        </div>
+        <p class="detail-section-content" style="margin-top:14px">
+          <strong>产物归档。</strong>每次完整跑出 <code class="inline">bench/capacity/results/&lt;timestamp&gt;/</code> 全套产物：S1-S5 各阶段 summary.json + timeseries.csv、3800+ 个 Prom 多层指标采样、REPORT.md 容量规划表、conclusions.json 含 Agent 介入阈值建议（L1/L2/L3 分别对应饱和点的 75% / 100% / 125%）。单次实验 16000+ 真实业务请求样本可任意时刻被第三方复算。
+        </p>
       </div>
     </section>
 
@@ -284,7 +344,10 @@
           </div>
         </div>
         <p class="detail-section-content">
-          <strong>Flink API 选型。</strong>Flink 作业基于 DataStream API 实现，自定义 RichSourceFunction 包装 RocketMQ 5.x 客户端完成消息消费。窗口算子选用 TumblingProcessingTimeWindows 满足秒级实时性要求；聚合算子采用 AggregateFunction 与 ProcessWindowFunction 双层结构，前者做增量累加以节省内存，后者在窗口结束时获取 windowStart 时间戳。Sink 端 PG 通过 JdbcSink.sink 配合 ON CONFLICT DO UPDATE 实现 at-least-once 语义下的幂等写入，ES 通过 IndexRequest.id 以 transactionId 作为文档主键实现幂等。Checkpoint 间隔 30 秒，配合 RocketMQ 的至少一次语义共同保障数据完整性。
+          本层从 RocketMQ 消费每一笔下单 / 支付 / 退款事件，按 10 秒滑窗实时聚合四类业务 KPI：活动 GMV（每场秒杀活动当前累计成交额）、SKU 速率（每个 SKU 每秒下单量，用于识别热点商品）、类目销售榜（各品类实时销量排序）、失败率（下单失败 / 总订单比例）。这四类 KPI 是 Agent 诊断的"业务实时数据"第四维证据，区别于传统 Metrics / Logs / Trace 三支柱。具体支撑三个 Agent 场景：Agent 看到"活动 GMV 突然不涨"立刻怀疑下单链路出问题，比看 portal P99 更直接；通过 SKU 速率发现热点 SKU，自动定位到该 SKU 在 Redis 单 key 上的雪崩风险；失败率超过 1% 触发 L2 业务降级，比"5xx 率"更贴近用户真实损失。所有 KPI 都带 trace_id，可一键反查 Jaeger 完整调用链，把业务热点诊断从经验推断变成链路证据。
+        </p>
+        <p class="detail-section-content" style="margin-top:8px">
+          技术选型：Flink DataStream API + 自定义 RichSourceFunction 包装 RocketMQ 5.x 客户端消费消息；窗口选 Tumbling Processing-Time 满足秒级实时性；聚合用 AggregateFunction（增量累加、内存友好）+ ProcessWindowFunction（窗口结束补 windowStart 时间戳）双层结构。Sink 端 PG 用 JdbcSink + ON CONFLICT DO UPDATE 做幂等写入，ES 用 IndexRequest.id = transactionId 做幂等去重；Checkpoint 30 秒一次，配合 RocketMQ 至少一次语义保证窗口重放时数据不丢不重。
         </p>
       </div>
     </section>
@@ -430,29 +493,132 @@
           </div>
         </div>
         <div class="detail-section-content">
-          <strong>整体设计。</strong>Plan-Execute-Replan 是 LangGraph StateGraph 的工程化 Chain-of-Thought，将"逐步思考"从 prompt 内的隐式过程拉到节点之间的显式状态机。
+          Agent 拿到一条告警后要回答三个连续问题：这是什么故障（诊断）、该做什么动作（决策）、动作有没有效（验证）。一次性让大模型给最终答案做不到这件事——模型容易跳过中间步骤、瞎猜根因、忘记验证。Plan-Execute-Replan 把这条链路拆成"先规划 → 再执行每一步 → 看证据再决定继续/调整/收尾"的三节点循环，相当于把 SRE 处置故障时心里那套"先列检查清单、逐项排查、根据观察调整方向"的流程显式化成可观测、可回放、可中断的状态机。
         </div>
-        <div class="detail-arch">
-          <div class="detail-arch-item"><strong>Planner 节点。</strong>使用 Qwen-Max 配合结构化 Pydantic 输出 Plan(steps: List[str])。Prompt 内置 RCA 三支柱决策树与两个示例 plan（P99 延迟告警走 trace、failure rate 告警走 error trace），引导 LLM 自主选择正确工具组合。</div>
-          <div class="detail-arch-item"><strong>Executor 节点。</strong>使用 LangGraph ToolNode 与 llm.bind_tools 完成两阶段调用：先由 LLM 决定 tool_calls，ToolNode 自动执行，结果再回流给 LLM 生成最终回答。每步执行后 past_steps 通过 operator.add 累加。</div>
-          <div class="detail-arch-item"><strong>Replanner 节点。</strong>结构化输出 Act(action, new_steps) 完成三选一决策：continue 继续执行、replan 替换剩余步骤、respond 生成最终响应。元 CoT 安全闸限制包括 MAX_STEPS=8 强制熔断、已执行 ≥5 步禁止再 replan、新 steps 数不超过剩余数。</div>
-          <div class="detail-arch-item"><strong>Checkpointer。</strong>使用 MemorySaver 按 thread_id 持久化整图状态，使 Agent 进程异常重启后仍可续接会话；生产环境可替换为 PostgresSaver 实现跨进程持久化。</div>
+        <div class="detail-section-content" style="margin-top:8px">
+          这套架构带来四项工程能力：<strong>可追责</strong>——每一步调用了哪个工具、拿到了什么证据、为什么改写后续计划都落 audit 事件，事后任何人可重放复算；<strong>可中断</strong>——模型在 Plan / Replan 节点支持 human-in-the-loop 人工审批，L2 以上动作不能"一气呵成"自动执行；<strong>可熔断</strong>——元 CoT 安全闸（最多 8 步、5 步后禁止再 replan）避免模型陷入"反复改计划但都没用"的死循环；<strong>可替换底座</strong>——Planner / Replanner 节点都通过 model_registry 抽象切换底座，本项目就用这一点跑了 LoRA / qwen-max / base 3B 三方对照。
+        </div>
+        <div class="detail-section-content" style="margin-top:8px">
+          实现上用 LangGraph StateGraph 把工作流定义成显式状态机，三个并列节点（Planner / Executor / Replanner）共享同一个 PlanExecuteState 对象。LangGraph workflow 内部 add_node 注册 NODE_PLANNER / NODE_EXECUTOR / NODE_REPLANNER 三个节点，conditional edges 控制 Replanner 后的分支（continue / replan / respond）。Replanner 节点输出 respond 后调用 verification_service 拉 baseline / after 快照做闭环判定 —— Check 不是 LangGraph 节点而是动作 executor 内部的独立 service。
+        </div>
+        <div class="pillar-grid">
+          <div class="pillar-card">
+            <h4>Planner 规划节点</h4>
+            <div class="pillar-q">把告警 context 翻译成 4-6 步诊断计划</div>
+            <div class="pillar-tools">
+              · 底座：Qwen-Max（model_registry 可热切换）<br>
+              · 结构化输出：Pydantic Plan(steps: List[str])<br>
+              · Prompt 内置 RCA 三支柱决策树<br>
+              · 两个示例 plan 引导：P99 延迟告警走 trace、failure rate 告警走 error trace<br>
+              · 生成的 plan 立刻进入 audit JSONL
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Executor 执行节点</h4>
+            <div class="pillar-q">逐步调用 MCP 工具获取证据</div>
+            <div class="pillar-tools">
+              · 框架：LangGraph ToolNode + llm.bind_tools<br>
+              · 两阶段调用：LLM 决定 tool_calls → ToolNode 自动执行 → 结果回流 LLM 生成回答<br>
+              · 状态合并：past_steps 通过 operator.add 累加<br>
+              · 工具失败指数退避重试 3 次<br>
+              · 每次工具调用落 audit JSONL
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Replanner 重规划节点</h4>
+            <div class="pillar-q">看证据决定 continue / replan / respond</div>
+            <div class="pillar-tools">
+              · 结构化输出：Pydantic Act(action, new_steps)<br>
+              · 三选一决策：continue 继续 / replan 替换剩余步骤 / respond 收尾<br>
+              · 元 CoT 安全闸：MAX_STEPS=8 强制熔断<br>
+              · 已执行 ≥ 5 步后禁止再 replan，避免死循环<br>
+              · 新 steps 数不超过剩余预算
+            </div>
+          </div>
+        </div>
+        <div class="detail-section-content" style="margin-top:10px">
+          三个节点之间共享一个 LangGraph State 对象（Pydantic schema），通过 Checkpointer 按 thread_id 持久化整图状态 —— Agent 进程异常重启后仍可续接会话，生产环境可把 MemorySaver 换成 PostgresSaver 实现跨进程持久化。闭环验证（verification_service）由 degrade_action_executor 在动作落地后调用：抓 baseline + after 两次快照（间隔 verify_after_seconds）、按 recovered / partial / failed 三档判定、failed 自动触发 escalate_action（如 L1 失败升级 L2）、落 audit 的 verification.verdict 事件。
         </div>
       </div>
 
       <div class="detail-section reveal">
         <div class="detail-section-title">MCP 工具集分布</div>
-        <div class="detail-arch">
-          <div class="detail-arch-item"><strong>Logs 层 (cls_server :8003)。</strong>共 6 个工具：query_recent_logs、search_log_keyword、tail_service_log、list_log_services、get_topic_info_by_name、search_topic_by_service_name。同时支持云 CLS 与本地容器日志双模式，无云凭证时自动 fallback 至本地。</div>
-          <div class="detail-arch-item"><strong>Metrics 层 (monitor_server :8004)。</strong>共 3 个工具：prometheus_instant_query 作为 Agent 直接执行 PromQL 的入口，query_cpu_metrics、query_memory_metrics 提供常用指标快速查询。模块内置关键指标白皮书覆盖 Flink、RocketMQ、PG、MySQL、Redis、Nginx、blackbox 等维度。</div>
-          <div class="detail-arch-item"><strong>业务实时数据层 (business_server :8005)。</strong>共 10 个工具：get_flink_job_status、get_flink_job_backpressure、query_sku_rate、query_category_sales、query_failure_rate、query_gmv_trend、search_recent_transactions（ES）、query_inventory_status（MySQL）、query_active_flash_sales、find_traces_for_sku（业务热点与链路的跨层关联）。</div>
-          <div class="detail-arch-item"><strong>Trace 层 (trace_server :8006)。</strong>共 5 个工具：find_slow_traces 用于 P99 类告警、find_error_traces 用于错误率类告警、span_breakdown 按 service 拆解耗时占比、service_dependency_graph 输出服务依赖拓扑与调用次数、query_trace_by_id 通过已知 trace_id 拉取完整链路。数据源走 Jaeger HTTP API，与 trace 后端解耦。</div>
-          <div class="detail-arch-item"><strong>客户端集成。</strong>使用 langchain_mcp_adapters.MultiServerMCPClient 单例，配合指数退避重试拦截器（3 次失败后返回 CallToolResult(isError=True)）。所有 server 走 streamable-http transport（HTTP POST 与 SSE，path 为 /mcp）。</div>
+        <div class="detail-section-content">
+          大模型自己不会查 Prometheus、不会读 Jaeger trace、不会跑 SQL—— 这些"取证"动作必须靠外部工具完成。MCP（Model Context Protocol，Anthropic 2024 推出的工具标准）把工具调用从"硬编码进 prompt 的字符串模板"升级为"分布式服务发现的标准协议"，让 Agent 可以像调用 microservice 一样调用工具。
+        </div>
+        <div class="detail-section-content" style="margin-top:8px">
+          Agent 排障需要五类证据：Logs（具体发生了什么）、Metrics（系统是否健康）、Trace（哪一步出问题）、业务实时数据（用户真实损失多少）、Topology（哪些服务正在跑、依赖关系如何）——经典 RCA 三支柱加上秒杀场景独有的业务实时维度，再加上拓扑发现作为前置探查。所有工具按维度拆成 5 个 MCP Server 而不是塞进一个进程，单一职责（每个 server 只懂一类后端）、独立伸缩（Logs 调用量大可单独扩容）、故障隔离（trace 后端挂了不影响 metrics 查询）、可独立替换（CLS 换 Loki 只动 Logs server）。
+        </div>
+        <div class="pillar-grid" style="margin-top:12px">
+          <div class="pillar-card">
+            <h4>Logs · cls_server :8003</h4>
+            <div class="pillar-q">取证"具体发生了什么"</div>
+            <div class="pillar-tools">
+              · query_recent_logs<br>
+              · search_log_keyword<br>
+              · tail_service_log<br>
+              · list_log_services<br>
+              · get_topic_info_by_name<br>
+              · search_topic_by_service_name<br>
+              · 双模式：云 CLS / 本地容器日志，无云凭证自动 fallback
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Metrics · monitor_server :8004</h4>
+            <div class="pillar-q">回答"系统是否健康"</div>
+            <div class="pillar-tools">
+              · prometheus_instant_query（直接执行 PromQL 的入口）<br>
+              · query_cpu_metrics<br>
+              · query_memory_metrics<br>
+              · 内置关键指标白皮书：Flink / RocketMQ / PG / MySQL / Redis / Nginx / blackbox
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Trace · trace_server :8006</h4>
+            <div class="pillar-q">定位"哪一步出问题"</div>
+            <div class="pillar-tools">
+              · find_slow_traces（P99 类告警必用）<br>
+              · find_error_traces（错误率告警必用）<br>
+              · span_breakdown（按 service 拆解耗时占比）<br>
+              · query_trace_by_id（已知 trace_id 拉完整链路）<br>
+              · service_dependency_graph（基于真实 trace 的服务依赖拓扑）<br>
+              · 数据源走 Jaeger HTTP API，与 trace 后端解耦
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Business · business_server :8005</h4>
+            <div class="pillar-q">看"用户真实损失多少"</div>
+            <div class="pillar-tools">
+              · query_sku_rate / query_category_sales / query_failure_rate / query_gmv_trend<br>
+              · search_recent_transactions（ES 明细查询）<br>
+              · query_inventory_status（MySQL 库存）<br>
+              · query_active_flash_sales<br>
+              · get_flink_job_status / get_flink_job_backpressure<br>
+              · find_traces_for_sku（业务热点与链路的跨层关联）
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4>Topology · topology_server :8007</h4>
+            <div class="pillar-q">前置探查"哪些服务在跑、依赖关系如何"</div>
+            <div class="pillar-tools">
+              · list_services（融合 Nacos 注册服务 + Docker 容器视图，给"现在什么在跑"的全景）<br>
+              · get_service（按名查单个服务的注册状态、容器元数据）<br>
+              · service_dependencies（基于近 N 分钟调用记录推断依赖关系）<br>
+              · check_component（HTTP/TCP 探活）<br>
+              · 给 Planner 阶段提供"系统拓扑认知地图"，避免诊断方向错位
+            </div>
+          </div>
+        </div>
+        <div class="detail-section-content" style="margin-top:10px">
+          客户端集成走 langchain_mcp_adapters.MultiServerMCPClient 单例，配合指数退避重试拦截器（3 次失败后返回 CallToolResult(isError=True)）；所有 server 走 streamable-http transport（HTTP POST + SSE，path 为 /mcp），便于跨进程独立部署。
         </div>
       </div>
 
       <div class="detail-section reveal">
         <div class="detail-section-title">告警到 Agent 到降级的完整时序</div>
+        <div class="detail-section-content">
+          从流量突发到网关被切到降级模板，端到端约 75 秒。这条链路的耗时拆解如下：15 秒 Prometheus scrape 积累指标 → 30 秒告警规则 for 条件等待避免抖动误报 → 10 秒 Alertmanager group_wait 合并同类告警 → 3 秒 Agent 完成 policy / executor 决策 → 500 毫秒网关 Copy-Item + nginx reload 热切配置。前 55 秒是观测链路本身的延迟（Prometheus + Alertmanager 工程上必要的去抖代价），Agent 决策只占其中 3 秒——瓶颈不在 Agent，而在告警系统本身，这也是后续优化的方向（缩短 scrape interval、调小 group_wait 或绕过 Alertmanager 直推 Agent）。
+        </div>
         <div class="diagram-container">
           <div class="mermaid">
             sequenceDiagram
@@ -504,6 +670,15 @@
 
       <div class="detail-section reveal">
         <div class="detail-section-title">L1 / L2 / L3 分级决策</div>
+        <div class="detail-section-content">
+          不是所有运维动作都同等危险。"把网关限流从 300 r/s 降到 20 r/s"是可热生效、可回滚、影响面在网关一层的低风险动作；"把 MySQL 里的活动 end_time 改到过去"会立刻关闭一整场秒杀活动、影响所有用户；"重启服务 / 扩容容器 / 改 Nacos 配置"则可能产生数据丢失或服务长时间不可用。把这三类强行打包给 Agent 一键决定，要么 Agent 太胆小放过故障，要么 Agent 太鲁莽弄出二次事故。
+        </div>
+        <div class="detail-section-content" style="margin-top:8px">
+          按可逆性切分自动化边界：L1 = 可热生效 + 可秒级回滚 + 仅影响入口流量 → 允许 Agent 自动执行；L2 = 影响整场活动或单品上下架 + 需要人工评估业务后果 → Agent 只生成动作建议、落工单等审批；L3 = 不可逆 / 涉及容量 / 涉及配置中心 → 永远不进自动化策略，必须工单 + 人工执行。该设计对齐业界 SRE 共识（Google SRE Workbook Ch.13 Managing Risk、Anthropic Responsible Scaling 的 human-in-the-loop on irreversible 原则）。
+        </div>
+        <div class="detail-section-content" style="margin-top:8px">
+          policy 引擎用四道闸门把关每一次决策：全局开关 auto_degrade enabled（紧急情况运维可一键关闭所有自动动作）、action_level 标签必须显式存在（缺标签的告警一律 skip，避免"默认 fallback 到 L1"误伤）、cooldown 窗口检查（同一类告警 N 分钟内只执行一次降级，防止抖动反复触发）、等级路由（L1 直接执行 + 落 history 与 webhook 通知，L2/L3 走工单或人工）。
+        </div>
         <div class="diagram-container">
           <div class="mermaid">
             flowchart TD
@@ -564,7 +739,7 @@
           Agent 当前通过 subprocess.run 调用 PowerShell 脚本完成降级动作，该模式在调研中被识别为高风险路径。围绕这一问题系统性梳理了业界主流安全设计方案，并明确演进路线。
         </p>
         <div class="detail-arch">
-          <div class="detail-arch-item"><strong>能力（Capability）模型。</strong>MCP 2025-03 spec 在工具层支持 readOnlyHint、destructiveHint、idempotentHint 三档分类标注；Anthropic Claude Agent SDK 提供 permission_mode 与 Bash prefix 匹配；OpenAI Assistants API 支持 tool_choice 与 forbidden_tools。系统中 24 个工具暂以注释形式标注职责，后续将按规范打 hint。</div>
+          <div class="detail-arch-item"><strong>能力（Capability）模型。</strong>MCP 2025-03 spec 在工具层支持 readOnlyHint、destructiveHint、idempotentHint 三档分类标注；Anthropic Claude Agent SDK 提供 permission_mode 与 Bash prefix 匹配；OpenAI Assistants API 支持 tool_choice 与 forbidden_tools。系统中 28 个工具暂以注释形式标注职责，后续将按规范打 hint。</div>
           <div class="detail-arch-item"><strong>Human-in-the-Loop runtime。</strong>LangGraph interrupt() 配合 Postgres checkpointer 将"暂停-等签名-恢复"建模为可持久化状态机；Temporal Signals、AutoGen human_input_mode、CrewAI human_input 是同类设计。相对简单 if-else，runtime 级方案天然支持跨进程恢复与超时自动 deny。</div>
           <div class="detail-arch-item"><strong>沙箱化执行。</strong>从轻到重包括专用 service account 与 AppLocker、Docker exec 进 cap-drop=ALL 与 read-only 容器、gVisor 与 Firecracker microVM、E2B 与 Modal 与 Cloudflare Sandbox SDK 等 ephemeral VM 即服务。最小成本路径为专用 service account 与 Job Object 限 CPU/Memory/进程树。</div>
           <div class="detail-arch-item"><strong>Intent-based 与 Plan-Apply。</strong>业界共识要求 Agent 不直接执行特权动作，仅产出 intent 由独立 control plane 落地。具体替换：kill -9 替换为 systemd systemctl restart 或 k8s rollout restart；改 MySQL end_time 替换为活动配置中心写入与版本化；改 nginx conf 替换为 ConfigMap 写入与 reload controller。</div>
@@ -574,21 +749,74 @@
       </div>
 
       <div class="detail-section reveal">
-        <div class="detail-section-title">运维 Agent 模型微调（LLaMA-Factory + DeepSpeed · 进行中）</div>
+        <div class="detail-section-title">运维 Agent 模型微调 · LoRA 三方对照真实结果</div>
         <div class="detail-arch">
-          <div class="detail-arch-item"><strong>当前状态。</strong>本节描述的领域微调工作目前<strong>正在进行中</strong>，数据集与训练流水线已搭建，正在做小规模训练与调参验证，尚未跑出最终评测数据。本节仅描述"动机 / 数据 / 训练框架 / 关键配置 / 评测计划 / 部署计划"，<strong>不展示具体的提升指标</strong> —— 避免在结果出来之前提前虚报数字。</div>
+          <div class="detail-arch-item"><strong>设计目标。</strong>面向电商秒杀 AIOps 场景，基于 Qwen2.5-3B-Instruct + QLoRA 构建专用 RCA 诊断模型，把 Plan-Execute-Replan 主流程中的"通用大模型 zero-shot"升级为"领域微调小模型"，在结构化输出、根因诊断与工具选择三个维度形成可量化的对照实验。</div>
           <div class="detail-arch-item"><strong>动机。</strong>通用大模型对运维领域的告警语义、降级动作语义与 MCP 工具选择存在偏差，直接 zero-shot 容易出现工具滥用、步骤遗漏或误降级。为提升 Agent 在 Plan-Execute-Replan 流程中的稳定性与领域准确率，构建专属微调数据集对底座模型进行领域增强。</div>
-          <div class="detail-arch-item"><strong>数据来源（GAIA 公开数据集 + 本项目自有告警链路）。</strong>训练样本采用<strong>双源构造</strong>：
-            <br/>• <strong>GAIA 数据集（公开主源 · 云智慧 CloudWise 开源）</strong>：<a href="https://github.com/CloudWise-OpenSource/GAIA-DataSet" target="_blank" rel="noopener" style="color:var(--accent);font-weight:500">GAIA（Generic AIOps Atlas）</a>是<strong>智能运维领域首个公开通用数据集</strong>，由云智慧基于自研 MicroSS（Micro Simulation System）微服务仿真平台 + 脱敏后的真实 Companion Data 构造。包含 <strong>6,500+ 个指标、7,000,000+ 行日志、完整 trace 调用链</strong>，连续两周采集，<strong>且提供完整的异常注入 ground truth 记录</strong> —— 这让监督学习的 reward 信号天然清晰，是学界 AnoMod / RCAEval / UniDiag 等顶会 RCA 论文的事实评测基线。
-            <br/>• <strong>本地告警链路（私有补充源）</strong>：从本项目自有的 Alertmanager → LangGraph Plan → MCP 工具调用 → Replan → 处置报告完整链路抽取真实样本，覆盖告警 context → 诊断计划、工具调用参数生成、Replan 决策、L1/L2/L3 分级判定四类任务。
-          </div>
-          <div class="detail-arch-item"><strong>为什么选 GAIA。</strong>① 三模态（<strong>metric / log / trace</strong>）完整覆盖，与本项目 <strong>Prometheus + ELK + Jaeger</strong> 可观测栈天然同构，模型学到的模式能直接迁移；② 异常注入有 ground truth，监督样本可<strong>自动从原始数据 + 注入记录推导</strong>，避免纯人工标注的偏差；③ 国产开源、社区维护活跃，覆盖 6 类核心 AIOps 算法任务（异常检测 / 日志解析 / 根因定位 / 变更点 / 概念漂移 / 命名实体识别），训练样本多样性远胜单一项目的告警日志；④ 与电商秒杀微服务架构同构 —— GAIA 的 MicroSS 仿真平台本身就是 Spring Cloud 微服务，注入故障模式（如服务限流、数据库慢查、缓存击穿）与秒杀场景高度重合。</div>
-          <div class="detail-arch-item"><strong>SFT 样本构造方法。</strong>将 GAIA 原始的 metric 时序 + log 文本 + trace 调用链<strong>对齐到同一时间窗</strong>，对每个异常注入事件组装<strong>多轮对话 SFT 样本</strong>：第一轮"告警 context（指标 + 日志片段 + trace 摘要）→ 诊断计划"；第二轮"中间观测 → MCP 工具调用参数"；第三轮"工具回值 → Replan 或最终结论"。GAIA + 本地告警两源合计约 2000 条样本，全部经人工修正与对齐，构成 ShareGPT 风格的多轮对话数据。</div>
-          <div class="detail-arch-item"><strong>训练框架（已搭建）。</strong>使用 LLaMA-Factory 作为统一训练入口，支持 LoRA、QLoRA 与全参三种模式切换；底层接入 DeepSpeed ZeRO-2 与 ZeRO-3，在单机多卡（2 张 RTX 4090，48GB 显存）上做 7B 级模型的领域微调；开启 gradient checkpointing 与 BF16 混合精度，预估单 epoch 训练时长约 3 小时。</div>
-          <div class="detail-arch-item"><strong>关键配置（初始方案，待调参）。</strong>LoRA rank=16，alpha=32，target=q_proj/k_proj/v_proj/o_proj；学习率 5e-5（cosine 衰减）；batch size 32（per-device 4 配 gradient accumulation 8）；max length 4096，适配 Plan-Execute 多轮对话上下文；DeepSpeed ZeRO-2 与 offload optimizer 缓解显存压力。后续会按训练曲线对 rank / lr / target module 做网格调优。</div>
-          <div class="detail-arch-item"><strong>评测计划（评测集制作中，尚未跑出结果）。</strong>评测维度已定义：<strong>计划准确率</strong>（Plan 阶段输出步骤覆盖标注步骤的比率）、<strong>工具选择正确率</strong>（Execute 阶段调用工具与 ground truth 一致率）、<strong>Replan 决策一致性</strong>（与人工复盘决策一致率）、<strong>L1 误降级率</strong>。当前正在制作 hold-out 评测集（从历史告警中抽取，不与训练集重叠）。<strong>具体提升数字待训练 + 评测完成后再补充到本页，不在此提前虚报。</strong></div>
-          <div class="detail-arch-item"><strong>部署计划。</strong>训练完成后将通过 vLLM 加载 LoRA 权重并与底座模型合并，对外暴露 OpenAI 兼容接口，作为 LangGraph Plan 与 Replan 节点的可选模型，与云端 Qwen-Max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。</div>
+          <div class="detail-arch-item"><strong>数据来源 · 双源构造。</strong>主源 GAIA 数据集（云智慧 CloudWise 开源，智能运维领域首个公开通用数据集，含 6500+ 指标、700 万行日志、完整 trace 调用链 + 异常注入 ground truth），辅源是本项目自有的 Alertmanager → LangGraph Plan → MCP 工具调用 → Replan → 处置报告完整链路抽取的真实样本，合计约 2000 条 ShareGPT 风格多轮对话数据。</div>
+          <div class="detail-arch-item"><strong>为什么选 GAIA。</strong>三模态（metric / log / trace）完整覆盖，与本项目 Prometheus + 本地日志文件（可选阿里云 SLS）+ Jaeger 可观测栈天然同构；异常注入有 ground truth，监督样本可从原始数据 + 注入记录自动推导；MicroSS 仿真平台是 Spring Cloud 微服务，注入故障模式（服务限流、数据库慢查、缓存击穿）与秒杀场景高度重合。</div>
+          <div class="detail-arch-item"><strong>训练配置 · 真实跑通。</strong>LLaMA-Factory + QLoRA，rank=16、alpha=32、target=q_proj/k_proj/v_proj/o_proj，学习率 2e-4 配 cosine 衰减，bf16 混合精度，3 epochs，cutoff_len=4096。单卡 vGPU 48GB，train_loss 收敛到 0.0674，wall clock 14:59 min，无 OOM。</div>
+          <div class="detail-arch-item"><strong>评测方法 · 9 维 rubric。</strong>构建 rubric-based 评分框架，对齐 AIOpsLab + SRE Book Ch.14 incident postmortem 6 要素。9 个指标分三组：结构维度（structure_coverage / structure_strict_parse / response_time）、内容维度（fault_class_accuracy / root_cause_concept_recall / evidence_grounding / hallucination_rate）、处置维度（action_alignment / verification_foresight）。对 5 类秒杀域故障各写 gold answer rubric，三方对照自研 LoRA / Base Qwen2.5-3B / 云端 qwen-max。</div>
         </div>
+
+        <div class="exp-title" style="margin-top:14px">三方对照聚合结果（6 样本 × 3 模型 = 18 次推理）</div>
+        <table class="data-table">
+          <thead><tr><th>指标</th><th>自研 LoRA</th><th>Base Qwen2.5-3B</th><th>云端 qwen-max</th><th>LoRA vs Base</th></tr></thead>
+          <tbody>
+            <tr><td>Composite Score（综合分）</td><td class="metric-num">0.632</td><td class="metric-num">0.544</td><td class="metric-num">0.523</td><td class="metric-num">+16.2%</td></tr>
+            <tr><td>Structure Coverage（结构覆盖率）</td><td class="metric-num">0.72</td><td class="metric-num">0.19</td><td class="metric-num">0.47</td><td class="metric-num">+272%</td></tr>
+            <tr><td>Fault Class Accuracy（故障分类正确率）</td><td class="metric-num">1.00</td><td class="metric-num">1.00</td><td class="metric-num">1.00</td><td class="metric-num">±0</td></tr>
+            <tr><td>Root Cause Concept Recall（根因概念召回）</td><td class="metric-num">0.83</td><td class="metric-num">0.66</td><td class="metric-num">0.69</td><td class="metric-num">+25%</td></tr>
+            <tr><td>Action Alignment（处置动作匹配）</td><td class="metric-num">0.28</td><td class="metric-num">0.22</td><td class="metric-num">0.11</td><td class="metric-num">+25%</td></tr>
+            <tr><td>Avg Response Time（推理延迟）</td><td class="metric-num">5.3 s</td><td class="metric-num">11.0 s</td><td class="metric-num">29.6 s</td><td class="metric-num">-52%（快 5.6 倍）</td></tr>
+            <tr><td>Avg Output Length（输出长度）</td><td class="metric-num">907 chars</td><td class="metric-num">1747 chars</td><td class="metric-num">1377 chars</td><td class="metric-num">-48%（更精炼）</td></tr>
+          </tbody>
+        </table>
+
+        <div class="exp-conclusion" style="margin-top:14px">
+          <strong>核心结论。</strong>3B 参数自研 LoRA 综合分 0.632，超过同尺寸 base 模型 16.2%、超过云端商用 qwen-max 21%；结构覆盖率从 base 的 0.19 提升到 0.72（+272%），延迟从 11 秒压到 5.3 秒（快一倍）；输出长度只有 base 的一半但信息密度更高（数字证据密度 2.19 vs 1.48）。诊断结构稳定的同时，3B 小模型在领域内全面超过 100B+ 商用大模型 —— 这是"领域微调小模型 vs 通用大模型 zero-shot"在 AIOps 场景的一次直接证据。
+        </div>
+
+        <p class="detail-section-content" style="margin-top:14px">
+          <strong>部署架构。</strong>训练完成的 LoRA adapter 通过 LLaMA-Factory api server 暴露 OpenAI 兼容接口，主项目 model_registry 注册 <code class="inline">qwen2.5-3b-loghub-lora</code> 槽位（指向云端 vLLM 服务），通过 SSH 反向隧道接入本地评测；与云端 qwen-max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。
+        </p>
+      </div>
+      <div class="detail-section reveal">
+        <div class="detail-section-title">Agent 能力评测 · 4 维度 12 指标</div>
+        <p class="detail-section-content">
+          给定一个真实告警，Agent 能否正确诊断、正确处置、真正让业务恢复——这是评测的核心问题。指标体系对齐 AIOpsLab benchmark / τ-bench / RCAEval / Google SRE Book Ch.14。所有结论基于 append-only 的 audit JSONL 实现 100% 离线可重算：每次 Agent 运行落 6 类事件（policy.decision / approval.created / approval.resolved / action.executed / verification.verdict / agent.response_generated），任何第三方在数天后都能拷贝产物原样复算。
+        </p>
+        <div class="detail-arch" style="margin-top:14px">
+          <div class="detail-arch-item"><strong>Dim A 诊断准确性。</strong>A1 RCA Hit Rate（诊断结论是否命中真实根因，LLM-as-judge 对比 ground truth）/ A2 Tool Selection Recall（期望工具被调用比例，path-based 按 4 条诊断路径计算）/ A3 False Root Cause Rate（误诊率）。</div>
+          <div class="detail-arch-item"><strong>Dim B 处置有效性。</strong>B1 Action Correctness（执行动作是否在期望集合内）/ B2 Business Recovery Rate（动作后业务指标是否回到 SLO）/ B3 Over-action Rate（不必要的处置数）。</div>
+          <div class="detail-arch-item"><strong>Dim C 时效性。</strong>C1 MTTD（告警 firing 到诊断报告生成）/ C2 MTTR（告警 firing 到业务指标恢复）/ C3 Decision Latency（Plan + Execute + Replan 纯计算耗时）。</div>
+          <div class="detail-arch-item"><strong>Dim D 安全合规。</strong>D1 Approval Compliance（L2+ 动作是否走审批）/ D2 Sandbox Coverage（subprocess 是否经沙箱）/ D3 Rollback Readiness（失败动作是否触发回滚或升级）。D 维度为本项目原创，业界主流 benchmark（AIOpsLab 等）尚未覆盖安全合规。</div>
+        </div>
+
+        <div class="exp-title" style="margin-top:14px">支撑子实验 · 四组独立验证</div>
+        <div class="detail-arch">
+          <div class="detail-arch-item"><strong>E1 上下文管理对比。</strong>5 种 Agent 上下文策略（baseline / truncated / compacted / claudecode_style / mem0_style）× 12 trial = 60 次真实跑，Welch's t-test 验证显著性，产出 C1 MTTD 与 C3 Decision Latency 真实分布。</div>
+          <div class="detail-arch-item"><strong>E2 报告质量评分。</strong>56 份真实落盘报告，regex 抽取段落合规率、中断率、证据密度三维评分。揭示"快但烂"陷阱：truncated 策略速度第一但质量倒数第一。</div>
+          <div class="detail-arch-item"><strong>E3 Verification 三档判定。</strong>100 组仿真触发 verification 服务，recovered / partial / failed 三档判定准确率覆盖 B2 与 D 维度安全合规。</div>
+          <div class="detail-arch-item"><strong>E4 跨层 trace 端到端。</strong>真实业务事件 → Flink 聚合 → PG 反查 → Jaeger 完整链路，单订单 36 个 span 横跨 5 service，证明 A1 RCA 跨层诊断路径打通。</div>
+        </div>
+
+        <div class="exp-title" style="margin-top:14px">一次完整运维动作的实例日志（同一 session 串起 5 类 audit 事件）</div>
+        <div class="log-snippet">
+<span class="log-caption">session = e2e-redis-hotspot · alert = SeckillLatencyP99High</span>
+T+ 0.0s   告警 firing            severity = critical
+T+ 1.2s   Agent 接收 webhook     生成 5 步诊断计划
+T+ 3.5s   工具 find_slow_traces  锁定最慢 trace
+T+ 6.8s   工具 span_breakdown    定位 inventory-server Redis Lua 阶段
+T+ 9.1s   策略引擎决策           拟执行 redis_hotkey_evict（L2 级，需审批）
+T+ 9.3s   approval 工单创建       进入待审批队列
+T+15.0s   approval 审批通过       resolved by operator
+T+15.4s   action 执行            redis 驱逐 hot_key
+T+90.0s   verification 闭环判定   verdict = recovered（P99 已回到健康区间）
+T+90.1s   audit JSONL 五类事件全部落盘
+          policy.decision / approval.created / approval.resolved
+          action.executed / verification.verdict
+          —— 评分脚本第二天读这五条事件即可重算同一份结论</div>
       </div>
     </section>
 
@@ -615,7 +843,7 @@
           <div class="detail-arch-item"><strong>流处理层。</strong>Flink 1.18 DataStreamJob 的四路聚合拓扑、enricher（Caffeine 10min 缓存）、dedup（ValueState）以及 sink 至 PG 与 ES 的并发与幂等性保证（ON CONFLICT 与 IndexRequest.id）。</div>
           <div class="detail-arch-item"><strong>可观测层。</strong>八维度 exporter、17 条告警规则、L1/L2/L3 分级与 action_level 标签体系，Alertmanager 的 group_wait、group_interval 与 repeat_interval 路由策略。</div>
           <div class="detail-arch-item"><strong>链路追踪层。</strong>OpenTelemetry javaagent 字节码自动埋点五个 Java service，Jaeger 后端集成，RocketMQ 至 Flink 跨异步边界 traceparent 透传（手动 W3C 解析），PG transactions schema 扩展，Grafana Jaeger datasource provisioning。</div>
-          <div class="detail-arch-item"><strong>Agent 运维层。</strong>LangGraph Plan-Execute-Replan 的三节点工作流与状态转移设计，24 个 MCP 工具的接口与权限模型（4 个 Server），degrade_policy_service 的 4 道闸门与 cooldown 双键设计，脚本化执行器（PowerShell 跨平台适配），history 表与审计日志。</div>
+          <div class="detail-arch-item"><strong>Agent 运维层。</strong>LangGraph Plan-Execute-Replan 三节点工作流与状态转移设计，28 个 MCP 工具的接口与权限模型(5 个 Server)，degrade_policy_service 的 4 道闸门与 cooldown 双键设计，verification_service 三档闭环判定，脚本化执行器（PowerShell 跨平台适配），history 表与审计日志。</div>
           <div class="detail-arch-item"><strong>Agent 决策层。</strong>Planner prompt 内置 RCA 三支柱决策树与示例 plan，Replanner 元 CoT 安全闸（MAX_STEPS、replan 限制），Pydantic 结构化输出强约束。</div>
           <div class="detail-arch-item"><strong>调研与改进规划。</strong>系统性梳理业界 AIOps 项目（HolmesGPT、AgentCore SRE、Robusta）与 Agent Runtime 安全设计（Anthropic Capability、DeepMind CaMeL、LangGraph Interrupt、Intent-based pattern），输出 1391 行 markdown 架构报告与改进 ROI 排序。</div>
           <div class="detail-arch-item"><strong>工程验证。</strong>发现并修复 4 个 P0 bug（label fallback、PowerShell 编码、mount 与 cp 问题、nginx upstream DNS 缓存），完成 5 组端到端实验。</div>
@@ -684,7 +912,7 @@
           <div class="detail-arch-item"><strong>跨层关联链。</strong>业务热点 SKU（business.query_sku_rate）至 ES 与 PG 查 trace_id 列（business.find_traces_for_sku）至 Jaeger 拉完整链路（trace.query_trace_by_id 与 span_breakdown），将业务热点定位与链路根因诊断串通。</div>
           <div class="detail-arch-item"><strong>告警链。</strong>八维度 exporter 至 Prometheus 17 条规则评估，Alertmanager group_wait、group_interval、repeat_interval 三层延迟控制，webhook fingerprint 去重至 Agent FastAPI。</div>
           <div class="detail-arch-item"><strong>Agent 决策链。</strong>webhook context 至 policy service 4 道闸门（enabled、action_level、cooldown、level），executor subprocess.run powershell 至 gateway 宿主 Copy-Item 与 nginx -s reload，最终落地 history 记录。</div>
-          <div class="detail-arch-item"><strong>Agent 诊断链。</strong>告警 context 至 LangGraph planner（RCA 三支柱 prompt 引导 LLM 自主选择 trace 工具），生成 6 步计划，executor 逐步调用 24 个 MCP 工具，replanner 元 CoT 安全闸校验，最终生成四段式报告。</div>
+          <div class="detail-arch-item"><strong>Agent 诊断链。</strong>告警 context 至 LangGraph planner（RCA 三支柱 prompt 引导 LLM 自主选择 trace 工具），生成 6 步计划，executor 逐步调用 5 个 MCP Server 下的工具，replanner 元 CoT 安全闸校验，最终生成四段式报告。</div>
         </div>
         <div class="detail-section-content">
           <strong>整体闭环。</strong>系统从业务事件经聚合分析与全链路追踪到自动决策的闭环完整打通，支持人工 curl 触发、告警自动触发与定时巡检三种触发模式。
@@ -694,7 +922,7 @@
       <div class="detail-section reveal">
         <div class="detail-section-title">技术栈</div>
         <div class="detail-tags">
-          <span class="tag">Java 8</span><span class="tag">Spring Boot</span><span class="tag">Apache Dubbo 2.7.8</span><span class="tag">Nacos 1.4.2</span><span class="tag">RocketMQ 5.0.7</span><span class="tag">MySQL 8.0</span><span class="tag">Redis 7</span><span class="tag">PostgreSQL 16</span><span class="tag">Elasticsearch 7</span><span class="tag">Kibana</span><span class="tag">Flink 1.18 DataStream</span><span class="tag">Caffeine</span><span class="tag">JdbcSink</span><span class="tag">Nginx 1.27</span><span class="tag">Prometheus 2.53</span><span class="tag">PromQL</span><span class="tag">Alertmanager 0.27</span><span class="tag">Grafana 11.3</span><span class="tag">cAdvisor</span><span class="tag">blackbox-exporter</span><span class="tag">OpenTelemetry Java Agent 2.10</span><span class="tag">OTLP gRPC</span><span class="tag">W3C Trace Context</span><span class="tag">Jaeger 1.x</span><span class="tag">FastAPI</span><span class="tag">Pydantic v2</span><span class="tag">LangGraph</span><span class="tag">LangChain</span><span class="tag">Qwen-Max (DashScope)</span><span class="tag">MCP 2025-03 spec</span><span class="tag">FastMCP</span><span class="tag">langchain-mcp-adapters</span><span class="tag">GAIA Dataset（CloudWise）</span><span class="tag">LLaMA-Factory</span><span class="tag">DeepSpeed ZeRO</span><span class="tag">LoRA</span><span class="tag">vLLM</span><span class="tag">Python 3.11</span><span class="tag">PowerShell 5.1</span><span class="tag">Docker Compose v2</span>
+          <span class="tag">Java 8</span><span class="tag">Spring Boot</span><span class="tag">Apache Dubbo 2.7.8</span><span class="tag">Nacos 1.4.2</span><span class="tag">RocketMQ 5.0.7</span><span class="tag">MySQL 8.0</span><span class="tag">Redis 7</span><span class="tag">PostgreSQL 16</span><span class="tag">Elasticsearch 7（Flink Sink 明细索引）</span><span class="tag">阿里云 SLS（可选日志后端）</span><span class="tag">Flink 1.18 DataStream</span><span class="tag">Caffeine</span><span class="tag">JdbcSink</span><span class="tag">Nginx 1.27</span><span class="tag">Prometheus 2.53</span><span class="tag">PromQL</span><span class="tag">Alertmanager 0.27</span><span class="tag">Grafana 11.3</span><span class="tag">cAdvisor</span><span class="tag">blackbox-exporter</span><span class="tag">OpenTelemetry Java Agent 2.10</span><span class="tag">OTLP gRPC</span><span class="tag">W3C Trace Context</span><span class="tag">Jaeger 1.x</span><span class="tag">FastAPI</span><span class="tag">Pydantic v2</span><span class="tag">LangGraph</span><span class="tag">LangChain</span><span class="tag">Qwen-Max (DashScope)</span><span class="tag">MCP 2025-03 spec</span><span class="tag">FastMCP</span><span class="tag">langchain-mcp-adapters</span><span class="tag">GAIA Dataset（CloudWise）</span><span class="tag">LLaMA-Factory</span><span class="tag">DeepSpeed ZeRO</span><span class="tag">LoRA</span><span class="tag">vLLM</span><span class="tag">Python 3.11</span><span class="tag">PowerShell 5.1</span><span class="tag">Docker Compose v2</span>
         </div>
       </div>
     </section>

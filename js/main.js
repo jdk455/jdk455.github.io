@@ -10,6 +10,19 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
+// Safety net: long pages (e.g. project detail with 5 layers + many mermaid
+// blocks) put later sections far below the initial viewport; IntersectionObserver
+// only triggers when the user scrolls there. Combined with slow external assets
+// (e.g. Google Fonts blocked in CN — load event never fires) the late sections
+// stay at opacity:0 forever and look "missing". 2.5 s after the script runs,
+// force every still-hidden .reveal element to become visible. We bind on a bare
+// setTimeout (not window.load) so that even if load never fires, fallback works.
+setTimeout(() => {
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+    el.classList.add('visible');
+  });
+}, 2500);
+
 // Nav scroll effect
 const nav = document.getElementById('nav');
 let lastY = 0;
