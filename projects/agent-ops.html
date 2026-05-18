@@ -786,11 +786,43 @@
         <p class="detail-section-content">
           给定一个真实告警，Agent 能否正确诊断、正确处置、真正让业务恢复——这是评测的核心问题。指标体系对齐 AIOpsLab benchmark / τ-bench / RCAEval / Google SRE Book Ch.14。所有结论基于 append-only 的 audit JSONL 实现 100% 离线可重算：每次 Agent 运行落 6 类事件（policy.decision / approval.created / approval.resolved / action.executed / verification.verdict / agent.response_generated），任何第三方在数天后都能拷贝产物原样复算。
         </p>
-        <div class="detail-arch" style="margin-top:14px">
-          <div class="detail-arch-item"><strong>Dim A 诊断准确性。</strong>A1 RCA Hit Rate（诊断结论是否命中真实根因，LLM-as-judge 对比 ground truth）/ A2 Tool Selection Recall（期望工具被调用比例，path-based 按 4 条诊断路径计算）/ A3 False Root Cause Rate（误诊率）。</div>
-          <div class="detail-arch-item"><strong>Dim B 处置有效性。</strong>B1 Action Correctness（执行动作是否在期望集合内）/ B2 Business Recovery Rate（动作后业务指标是否回到 SLO）/ B3 Over-action Rate（不必要的处置数）。</div>
-          <div class="detail-arch-item"><strong>Dim C 时效性。</strong>C1 MTTD（告警 firing 到诊断报告生成）/ C2 MTTR（告警 firing 到业务指标恢复）/ C3 Decision Latency（Plan + Execute + Replan 纯计算耗时）。</div>
-          <div class="detail-arch-item"><strong>Dim D 安全合规。</strong>D1 Approval Compliance（L2+ 动作是否走审批）/ D2 Sandbox Coverage（subprocess 是否经沙箱）/ D3 Rollback Readiness（失败动作是否触发回滚或升级）。D 维度为本项目原创，业界主流 benchmark（AIOpsLab 等）尚未覆盖安全合规。</div>
+        <div class="pillar-grid" style="margin-top:14px">
+          <div class="pillar-card">
+            <h4><strong>Dim A · 诊断准确性</strong></h4>
+            <div class="pillar-q">Diagnostic Accuracy · 3 项子指标 · 对齐 AIOpsLab / RCAEval 业界标准</div>
+            <div class="pillar-tools">
+              A1 RCA Hit Rate · 根因命中率<br>
+              A2 Tool Selection Recall · 工具调用召回率<br>
+              A3 False Root Cause Rate · 误根因率
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4><strong>Dim B · 处置有效性</strong></h4>
+            <div class="pillar-q">Action Effectiveness · 3 项子指标 · 对齐 AIOpsLab Mitigation Accuracy</div>
+            <div class="pillar-tools">
+              B1 Action Correctness · 处置动作正确率<br>
+              B2 Business Recovery Rate · 业务恢复率<br>
+              B3 Over-action Rate · 过度处置率
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4><strong>Dim C · 时效性</strong></h4>
+            <div class="pillar-q">Latency · 3 项子指标 · 对齐 Google SRE Book Ch.14 / NIST SP 800-61r3</div>
+            <div class="pillar-tools">
+              C1 MTTD · 平均检测时长<br>
+              C2 MTTR · 平均恢复时长<br>
+              C3 Decision Latency · 决策延迟
+            </div>
+          </div>
+          <div class="pillar-card">
+            <h4><strong>Dim D · 安全合规 ⭐</strong></h4>
+            <div class="pillar-q">Safety · 3 项子指标 · <strong>本项目原创</strong>，业界主流 benchmark 尚未覆盖</div>
+            <div class="pillar-tools">
+              D1 Approval Compliance · 审批合规率<br>
+              D2 Sandbox Coverage · 沙箱覆盖率<br>
+              D3 Rollback Readiness · 回滚就绪率
+            </div>
+          </div>
         </div>
 
         <div class="exp-title" style="margin-top:14px">支撑子实验 · 四组独立验证</div>
@@ -892,10 +924,6 @@ T+90.1s   audit JSONL 五类事件全部落盘
           <div class="effect-card">
             <div class="num">5</div>
             <div class="label">端到端实验组数</div>
-          </div>
-          <div class="effect-card">
-            <div class="num">1391</div>
-            <div class="label">架构报告与调研文档行数</div>
           </div>
           <div class="effect-card">
             <div class="num">4</div>
