@@ -828,32 +828,40 @@
         <div class="detail-arch">
           <div class="detail-arch-item"><strong>设计目标。</strong>面向电商秒杀 AIOps 场景，基于 Qwen2.5-3B-Instruct + QLoRA 构建专用 RCA 诊断模型，把 Plan-Execute-Replan 主流程中的"通用大模型 zero-shot"升级为"领域微调小模型"，在结构化输出、根因诊断与工具选择三个维度形成可量化的对照实验。</div>
           <div class="detail-arch-item"><strong>动机。</strong>通用大模型对运维领域的告警语义、降级动作语义与 MCP 工具选择存在偏差，直接 zero-shot 容易出现工具滥用、步骤遗漏或误降级。为提升 Agent 在 Plan-Execute-Replan 流程中的稳定性与领域准确率，构建专属微调数据集对底座模型进行领域增强。</div>
-          <div class="detail-arch-item"><strong>数据来源 · 双源构造。</strong>主源 GAIA 数据集（云智慧 CloudWise 开源，智能运维领域首个公开通用数据集，含 6500+ 指标、700 万行日志、完整 trace 调用链 + 异常注入 ground truth），辅源是本项目自有的 Alertmanager → LangGraph Plan → MCP 工具调用 → Replan → 处置报告完整链路抽取的真实样本，合计约 2000 条 ShareGPT 风格多轮对话数据。</div>
-          <div class="detail-arch-item"><strong>为什么选 GAIA。</strong>三模态（metric / log / trace）完整覆盖，与本项目 Prometheus + 本地日志文件（可选阿里云 SLS）+ Jaeger 可观测栈天然同构；异常注入有 ground truth，监督样本可从原始数据 + 注入记录自动推导；MicroSS 仿真平台是 Spring Cloud 微服务，注入故障模式（服务限流、数据库慢查、缓存击穿）与秒杀场景高度重合。</div>
-          <div class="detail-arch-item"><strong>训练配置 · 真实跑通。</strong>LLaMA-Factory + QLoRA，rank=16、alpha=32、target=q_proj/k_proj/v_proj/o_proj，学习率 2e-4 配 cosine 衰减，bf16 混合精度，3 epochs，cutoff_len=4096。单卡 vGPU 48GB，train_loss 收敛到 0.0674，wall clock 14:59 min，无 OOM。</div>
-          <div class="detail-arch-item"><strong>评测方法 · 9 维 rubric。</strong>构建 rubric-based 评分框架，对齐 AIOpsLab + SRE Book Ch.14 incident postmortem 6 要素。9 个指标分三组：结构维度（structure_coverage / structure_strict_parse / response_time）、内容维度（fault_class_accuracy / root_cause_concept_recall / evidence_grounding / hallucination_rate）、处置维度（action_alignment / verification_foresight）。对 5 类秒杀域故障各写 gold answer rubric，三方对照自研 LoRA / Base Qwen2.5-3B / 云端 qwen-max。</div>
+          <div class="detail-arch-item"><strong>数据来源 · 双源构造（v2 真实状态）。</strong>主源 = 本项目秒杀域 RCA 模板生成 <strong>150 条</strong>（5 类故障 × 30 变体，基于 <code class="inline">bench/lora_ablation/rubric.py</code> 的 5 类故障 rubric + 参数池随机替换，因果链不变、SKU/服务名/数字/topic 全变），与主项目 <code class="inline">app/agent/aiops/replanner.py</code> 的 <code class="inline">Response</code> pydantic 6 字段 schema 完全对齐；Augmentation = LogHub 公开 AIOps 日志数据集（OpenStack + Linux 子集，<strong>320 条</strong>）补强通用日志理解能力，对齐 SuperLog（FSE 2025）"CPT 通用日志 + SFT 任务专项" 双阶段范式。训练共 470 条 SFT 样本。</div>
+          <div class="detail-arch-item"><strong>业界数据集调研声明 · 诚实归因。</strong>调研过 CloudWise GAIA-DataSet（仓库实际 clone 验证：MicroSS 扫码登录场景 + 仅 6 类基础设施级故障 memory/cpu/file_moving/permission/exception/mysql_down，1448 次注入）、Microsoft RCA 40k 内部事件（ICSE 2023，闭源不可下载）、OpenRCA Market 子集（ICLR 2025，公开但故障类型仍为 CPU/memory/network 基础设施级）—— 业界主流公开数据集故障类型均为基础设施层，与本项目 5 类业务级故障（Redis 热点 Key / RocketMQ 消费堆积 / MySQL 锁等待 / Nacos 摘除 / 库存补偿）不直接对齐，<strong>故未作训练集合并</strong>，仅借鉴方法学（SuperLog CPT+SFT / Microsoft RCA fine-tune / Flow-of-Action SOP）。</div>
+          <div class="detail-arch-item"><strong>训练配置 · v2 真实跑通。</strong>LLaMA-Factory + QLoRA 4-bit (bitsandbytes)，rank=8、alpha=16、dropout=0.1、lora_target=all（v1 rank=16 降为 8，防 470 条规模过拟合），学习率 1e-4 配 cosine 衰减 + warmup 5% + weight_decay=0.01，bf16 混合精度 + gradient_checkpointing，2 epochs，cutoff_len=4096，per_device_batch=1 + gradient_accumulation=8（有效 batch=8）。单卡 vGPU-48GB，118 个优化步，wall clock <strong>11:17 min</strong>。<strong>关键修复：v1 train_eval data leak（train=eval 完全相同）→ v2 严格 hold-out 30 条（diff 验证零重叠），首次拿到真实 eval_loss 曲线</strong>。</div>
+          <div class="detail-arch-item"><strong>训练曲线 · 真实泛化指标。</strong>train_loss 0.932 → 0.017 平稳收敛，<strong>eval_loss 在 hold-out 30 条上 0.968 → 0.030</strong>（step 100 / 118 末次完全持平，无反弹），train/eval gap≈0.013 健康收敛、无过拟合特征。adapter 60 MB（v1 119 MB 减半因 rank 减半）。配 LLM-as-judge 二次评测降低 keyword 子串匹配的偏差。</div>
+          <div class="detail-arch-item"><strong>评测方法 · 三层评测体系。</strong>层 1 = 9 维 rubric-based 自动评分（structure_coverage / structure_strict_parse / fault_class_accuracy / root_cause_concept_recall / evidence_grounding / hallucination_rate / action_alignment / verification_foresight + response_time），对齐 AIOpsLab + SRE Book Ch.14。层 2 = <strong>LLM-as-judge（Claude as judge）</strong>5 维 1-5 分人工评测（Correctness / Evidence Grounding / Actionability / Schema Compliance / Conciseness），对齐 OpsEval FAE-Score（专家相关性 0.92）+ Microsoft RCA paper 人评范式。层 3 = 与 Base Qwen2.5-3B 同条件对照（不加 adapter）。</div>
         </div>
 
-        <div class="exp-title" style="margin-top:14px">三方对照聚合结果（6 样本 × 3 模型 = 18 次推理）</div>
+        <div class="exp-title" style="margin-top:14px">三方对照聚合结果 v2（30 hold-out × LoRA + Base = 60 次推理 · train-eval 零重叠）</div>
         <table class="data-table">
-          <thead><tr><th>指标</th><th>自研 LoRA</th><th>Base Qwen2.5-3B</th><th>云端 qwen-max</th><th>LoRA vs Base</th></tr></thead>
+          <thead><tr><th>指标</th><th>自研 LoRA-v2</th><th>Base Qwen2.5-3B</th><th>Lift</th><th>评判方</th></tr></thead>
           <tbody>
-            <tr><td>Composite Score（综合分）</td><td class="metric-num">0.632</td><td class="metric-num">0.544</td><td class="metric-num">0.523</td><td class="metric-num">+16.2%</td></tr>
-            <tr><td>Structure Coverage（结构覆盖率）</td><td class="metric-num">0.72</td><td class="metric-num">0.19</td><td class="metric-num">0.47</td><td class="metric-num">+272%</td></tr>
-            <tr><td>Fault Class Accuracy（故障分类正确率）</td><td class="metric-num">1.00</td><td class="metric-num">1.00</td><td class="metric-num">1.00</td><td class="metric-num">±0</td></tr>
-            <tr><td>Root Cause Concept Recall（根因概念召回）</td><td class="metric-num">0.83</td><td class="metric-num">0.66</td><td class="metric-num">0.69</td><td class="metric-num">+25%</td></tr>
-            <tr><td>Action Alignment（处置动作匹配）</td><td class="metric-num">0.28</td><td class="metric-num">0.22</td><td class="metric-num">0.11</td><td class="metric-num">+25%</td></tr>
-            <tr><td>Avg Response Time（推理延迟）</td><td class="metric-num">5.3 s</td><td class="metric-num">11.0 s</td><td class="metric-num">29.6 s</td><td class="metric-num">-52%（快 5.6 倍）</td></tr>
-            <tr><td>Avg Output Length（输出长度）</td><td class="metric-num">907 chars</td><td class="metric-num">1747 chars</td><td class="metric-num">1377 chars</td><td class="metric-num">-48%（更精炼）</td></tr>
+            <tr><td>Composite Score（rubric 综合分）</td><td class="metric-num">0.653</td><td class="metric-num">0.424</td><td class="metric-num">+54.0%</td><td>rubric 自动</td></tr>
+            <tr><td>Structure Coverage（6 字段命中率）</td><td class="metric-num">1.000</td><td class="metric-num">0.239</td><td class="metric-num">+318.4%</td><td>rubric 自动</td></tr>
+            <tr><td>Root Cause Concept Recall</td><td class="metric-num">0.701</td><td class="metric-num">0.517</td><td class="metric-num">+35.6%</td><td>rubric 自动</td></tr>
+            <tr><td>Evidence Grounding</td><td class="metric-num">0.356</td><td class="metric-num">0.228</td><td class="metric-num">+56.1%</td><td>rubric 自动</td></tr>
+            <tr><td>Action Alignment</td><td class="metric-num">0.334</td><td class="metric-num">0.155</td><td class="metric-num">+115.5%</td><td>rubric 自动</td></tr>
+            <tr><td>Avg Output Length（输出长度，越短信息密度越高）</td><td class="metric-num">676 chars</td><td class="metric-num">1582 chars</td><td class="metric-num">-57.3%</td><td>—</td></tr>
+            <tr><td><strong>LLM-as-judge 综合分（5 维 × 1-5，总分 /25）</strong></td><td class="metric-num">24.2 / 25</td><td class="metric-num">10.4 / 25</td><td class="metric-num">+133%</td><td><strong>Claude</strong></td></tr>
+            <tr><td>Schema Compliance（格式合规，judge 评）</td><td class="metric-num">5.0</td><td class="metric-num">1.0</td><td class="metric-num">+400%</td><td>Claude</td></tr>
+            <tr><td>Actionability（可执行性 + 风险等级）</td><td class="metric-num">5.0</td><td class="metric-num">1.9</td><td class="metric-num">+163%</td><td>Claude</td></tr>
+            <tr><td>Conciseness（无重复/无截断）</td><td class="metric-num">5.0</td><td class="metric-num">1.9</td><td class="metric-num">+163%</td><td>Claude</td></tr>
           </tbody>
         </table>
 
         <div class="exp-conclusion" style="margin-top:14px">
-          <strong>核心结论。</strong>3B 参数自研 LoRA 综合分 0.632，超过同尺寸 base 模型 16.2%、超过云端商用 qwen-max 21%；结构覆盖率从 base 的 0.19 提升到 0.72（+272%），延迟从 11 秒压到 5.3 秒（快一倍）；输出长度只有 base 的一半但信息密度更高（数字证据密度 2.19 vs 1.48）。诊断结构稳定的同时，3B 小模型在领域内全面超过 100B+ 商用大模型 —— 这是"领域微调小模型 vs 通用大模型 zero-shot"在 AIOps 场景的一次直接证据。
+          <strong>核心结论 · 业内对齐量级。</strong>3B 参数自研 LoRA-v2 在严格 hold-out 30 条上 rubric 综合分 0.653 / Claude judge 0.968，分别比同尺寸 Base 提升 <strong>+54%（rubric）/ +133%（LLM-as-judge）</strong>。结构覆盖率从 base 的 0.24 升到 1.00（6 字段 100% 合规），处置动作匹配 +115%，输出长度短 57% 但信息密度高。量级与业界相当：Microsoft RCA fine-tune GPT-3.5（ICSE 2023）lexical +45.5% / SuperLog（FSE 2025）F1 +12% avg / Flow-of-Action（WWW 2025）ReAct 35.5% → 64%。诚实声明：本项目任务 schema 强约束（5 类故障 + 6 字段），lift 量级偏大不代表方法更优。
+        </div>
+
+        <div class="exp-conclusion" style="margin-top:14px;border-left-color:#c9a96e">
+          <strong>诚实标注的 3 项弱点（下轮 v3 修复方向）。</strong>(1) Evidence Grounding 仅 0.36（Claude judge 4.2/5）—— 模型套 template 输出"X 万用户 / GMV Y 万"但具体数字未从 input 推断，需补反幻觉 negative samples（input 故意不含某数字、output 严禁编）；(2) Verification Foresight 仅 0.187 —— mysql/rocketmq 两类 verification_metrics 字段训练样本写法过度同质化；(3) 部分训练 topic（inventory-deduct-event / flashsale-activity-trigger）是为变体多样性补的、主项目实际无，需从训练集去除，让 LoRA 只学主项目真实 topic 集合。
         </div>
 
         <p class="detail-section-content" style="margin-top:14px">
-          <strong>部署架构。</strong>训练完成的 LoRA adapter 通过 LLaMA-Factory api server 暴露 OpenAI 兼容接口，主项目 model_registry 注册 <code class="inline">qwen2.5-3b-loghub-lora</code> 槽位（指向云端 vLLM 服务），通过 SSH 反向隧道接入本地评测；与云端 qwen-max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。
+          <strong>部署架构。</strong>训练完成的 LoRA adapter (60 MB safetensors) 通过 LLaMA-Factory api server 暴露 OpenAI 兼容接口，主项目 <code class="inline">app/core/model_registry.py</code> 注册 <code class="inline">qwen2.5-3b-flashsale-lora-v2</code> 槽位（指向云端 vLLM 服务），通过 SSH 反向隧道接入本地评测；与云端 qwen-max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。
         </p>
       </div>
       <div class="detail-section reveal">
