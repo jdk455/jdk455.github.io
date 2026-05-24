@@ -832,6 +832,20 @@
           <div class="detail-arch-item"><strong>业界数据集调研声明 · 诚实归因。</strong>调研过 CloudWise GAIA-DataSet（仓库实际 clone 验证：MicroSS 扫码登录场景 + 仅 6 类基础设施级故障 memory/cpu/file_moving/permission/exception/mysql_down，1448 次注入）、Microsoft RCA 40k 内部事件（ICSE 2023，闭源不可下载）、OpenRCA Market 子集（ICLR 2025，公开但故障类型仍为 CPU/memory/network 基础设施级）—— 业界主流公开数据集故障类型均为基础设施层，与本项目 5 类业务级故障（Redis 热点 Key / RocketMQ 消费堆积 / MySQL 锁等待 / Nacos 摘除 / 库存补偿）不直接对齐，<strong>故未作训练集合并</strong>，仅借鉴方法学（SuperLog CPT+SFT / Microsoft RCA fine-tune / Flow-of-Action SOP）。</div>
           <div class="detail-arch-item"><strong>训练配置 · v2 真实跑通。</strong>LLaMA-Factory + QLoRA 4-bit (bitsandbytes)，rank=8、alpha=16、dropout=0.1、lora_target=all（v1 rank=16 降为 8，防 470 条规模过拟合），学习率 1e-4 配 cosine 衰减 + warmup 5% + weight_decay=0.01，bf16 混合精度 + gradient_checkpointing，2 epochs，cutoff_len=4096，per_device_batch=1 + gradient_accumulation=8（有效 batch=8）。单卡 vGPU-48GB，118 个优化步，wall clock <strong>11:17 min</strong>。<strong>关键修复：v1 train_eval data leak（train=eval 完全相同）→ v2 严格 hold-out 30 条（diff 验证零重叠），首次拿到真实 eval_loss 曲线</strong>。</div>
           <div class="detail-arch-item"><strong>训练曲线 · 真实泛化指标。</strong>train_loss 0.932 → 0.017 平稳收敛，<strong>eval_loss 在 hold-out 30 条上 0.968 → 0.030</strong>（step 100 / 118 末次完全持平，无反弹），train/eval gap≈0.013 健康收敛、无过拟合特征。adapter 60 MB（v1 119 MB 减半因 rank 减半）。配 LLM-as-judge 二次评测降低 keyword 子串匹配的偏差。</div>
+        </div>
+
+        <div class="diagram-container" style="margin-top:14px;text-align:center">
+          <img src="../images/lora_v2/train_eval_loss_combined.png"
+               alt="LoRA-v2 training loss + eval loss combined plot"
+               style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:8px">
+          <div style="font-size:.85rem;color:#888;margin-top:8px;font-style:italic">
+            Loss 双曲线 · 蓝色 train_loss（150 秒杀 + 320 LogHub）/ 红色 eval_loss（30 hold-out, 严格不参与训练）·
+            末次 eval_loss=0.030 / train_loss=0.017，gap=0.013 健康收敛区
+          </div>
+        </div>
+
+        <div class="detail-arch" style="margin-top:14px">
+          <!-- 留空 placeholder, 让后面 evaluation 接续 -->
           <div class="detail-arch-item"><strong>评测方法 · 三层评测体系。</strong>层 1 = 9 维 rubric-based 自动评分（structure_coverage / structure_strict_parse / fault_class_accuracy / root_cause_concept_recall / evidence_grounding / hallucination_rate / action_alignment / verification_foresight + response_time），对齐 AIOpsLab + SRE Book Ch.14。层 2 = <strong>LLM-as-judge（Claude as judge）</strong>5 维 1-5 分人工评测（Correctness / Evidence Grounding / Actionability / Schema Compliance / Conciseness），对齐 OpsEval FAE-Score（专家相关性 0.92）+ Microsoft RCA paper 人评范式。层 3 = 与 Base Qwen2.5-3B 同条件对照（不加 adapter）。</div>
         </div>
 
