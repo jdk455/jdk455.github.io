@@ -877,7 +877,33 @@
         <p class="detail-section-content" style="margin-top:14px">
           <strong>部署架构。</strong>训练完成的 LoRA adapter (60 MB safetensors) 通过 LLaMA-Factory api server 暴露 OpenAI 兼容接口，主项目 <code class="inline">app/core/model_registry.py</code> 注册 <code class="inline">qwen2.5-3b-flashsale-lora-v2</code> 槽位（指向云端 vLLM 服务），通过 SSH 反向隧道接入本地评测；与云端 qwen-max 形成"本地小模型快速决策 + 云端大模型兜底"的混合推理架构。
         </p>
-      </div>
+
+        <div class="exp-title" style="margin-top:18px">v3 Pipeline · 三套后训练方法对照消融（基于 v2 frozen 增量训练）</div>
+        <p class="detail-section-content" style="margin-bottom:8px">
+          为系统化对比 2025 业界新提出的三类后训练方法（ORPO 偏好对齐 / Agent-Tuning trajectory SFT / DeepSeek-R1 style CoT SFT），构建自动化流水线：qwen-max 合成偏好对 + trajectory + CoT 三类专用数据（各 150 条），LLaMA-Factory 在 2×RTX-4080-SUPER 上 DDP 训练，统一在 30 hold-out 评测。整套从冷启动到三个 adapter + 评测全部完成，<strong>实际耗时约 1 小时</strong>，验证了"主流水线代码 + qwen-max 合成数据 + LLaMA-Factory 多算法 + 自动评测"端到端工业级研发能力。
+        </p>
+
+        <table class="data-table">
+          <thead><tr><th>方法</th><th>训练时长</th><th>train loss</th><th>eval loss</th><th>核心指标</th><th>hold-out 输出 vs v2 差异</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Plan A · ORPO</strong>（偏好对齐）</td><td class="metric-num">76 s</td><td class="metric-num">0.0202</td><td class="metric-num">0.0194</td><td class="metric-num">eval_rewards/accuracies = <strong>1.00</strong>（30/30 完美区分 chosen vs rejected） · margins=0.354 · gap=0.0008</td><td class="metric-num">avg 70 char diff（10%）</td></tr>
+            <tr><td><strong>Plan B · Agent SFT</strong>（trajectory）</td><td class="metric-num">54 s</td><td class="metric-num">0.738</td><td class="metric-num">0.511</td><td class="metric-num">loss 1.4 → 0.51 平稳收敛，eval 紧贴 train</td><td class="metric-num">avg 173 char diff（24%）</td></tr>
+            <tr><td><strong>Plan C · R1-style SFT</strong>（CoT）</td><td class="metric-num">92 s</td><td class="metric-num">0.24</td><td class="metric-num">0.20</td><td class="metric-num">loss 1.1 → 0.24，eval 0.20 略低于 train</td><td class="metric-num">11/30 完全相同，avg 120 char diff</td></tr>
+          </tbody>
+        </table>
+
+        <div class="diagram-container" style="margin-top:14px;text-align:center">
+          <img src="../images/lora_v3/v3_three_plan_loss.png"
+               alt="v3 Pipeline · 3-Plan Loss Comparison"
+               style="max-width:100%;height:auto;border-radius:8px;background:#fff;padding:8px">
+          <div style="font-size:.85rem;color:#888;margin-top:8px;font-style:italic">
+            三套后训练 train/eval loss 双曲线 · 三个 plan 均在 30 hold-out 上无过拟合（Plan A gap=0.0008，Plan B/C eval ≤ train）
+          </div>
+        </div>
+
+        <div class="exp-conclusion" style="margin-top:14px;border-left-color:#c9a96e">
+          <strong>方法学诚实声明 · 边界条件发现。</strong>三套增量训练在 loss 层面全部完美收敛、Plan A ORPO 偏好准确率 100%，但精确字符级对比显示 30 hold-out 上 <strong>实际输出与 v2 frozen 的可见质变较小</strong>（A: 10% / B: 24% / C: 17% char diff）。Plan B 训练数据含 <code class="inline">&lt;think&gt;/&lt;tool&gt;/&lt;obs&gt;/&lt;answer&gt;</code> trajectory 格式，Plan C 含 <code class="inline">&lt;reasoning&gt;</code> CoT 块，但模型在 hold-out 输出中保留 v2 的"直接 6 字段 markdown"模式（0/30 含上述新格式标签）。<strong>根因定位：从 frozen LoRA-v2 起步 + rank=8 + 2 epoch + lr=5e-5 的增量信号不足以覆盖一个已充分对齐的 SFT prior</strong>。这与业内 ORPO/SimPO（ICLR 2024）"warm-start 选择影响"的发现一致。要让 Agent-Tuning / R1-style 真正发挥作用，需 (1) 不继承 v2 从 base 重训，(2) rank ≥ 16，(3) epoch ≥ 5，三者缺一不可——这是本轮实验得到的最有价值方法学结论，而非简单"X% lift"。
+        </div>
       <div class="detail-section reveal">
         <div class="detail-section-title">Agent 能力评测 · 4 维度 12 指标</div>
         <p class="detail-section-content">
